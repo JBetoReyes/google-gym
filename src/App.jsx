@@ -127,7 +127,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volumen', chart_duration: 'Duración', chart_sets: 'Series',
     chart_freq: 'Frecuencia', chart_muscle: 'Por Músculo',
     avg_duration: 'Dur. Promedio', streak: 'Racha', fav_exercise: 'Ejercicio Fav.',
-    total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem',
+    total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem', min_label: 'min',
     tab_exercises: 'Ejercicios',
     no_exercises_selected: 'Sin ejercicios seleccionados',
     camera_error: 'No se pudo acceder a la cámara',
@@ -298,7 +298,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volume', chart_duration: 'Duration', chart_sets: 'Sets',
     chart_freq: 'Frequency', chart_muscle: 'Muscle Split',
     avg_duration: 'Avg. Duration', streak: 'Streak', fav_exercise: 'Top Exercise',
-    total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks',
+    total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks', min_label: 'min',
     tab_exercises: 'Exercises',
     no_exercises_selected: 'No exercises selected',
     camera_error: 'Could not access camera',
@@ -469,7 +469,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volume', chart_duration: 'Durée', chart_sets: 'Séries',
     chart_freq: 'Fréquence', chart_muscle: 'Par Muscle',
     avg_duration: 'Durée Moy.', streak: 'Série', fav_exercise: 'Exercice Fav.',
-    total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem',
+    total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem', min_label: 'min',
     tab_exercises: 'Exercices',
     no_exercises_selected: 'Aucun exercice sélectionné',
     camera_error: 'Caméra inaccessible',
@@ -1943,8 +1943,9 @@ export default function App() {
       : 0;
 
     const totalMinutes = history.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const minLbl = TRANSLATIONS[lang].min_label || 'min';
     const totalHoursStr = totalMinutes < 60
-      ? `${totalMinutes} min`
+      ? `${totalMinutes} ${minLbl}`
       : `${(totalMinutes / 60).toFixed(1)}h`;
 
     const setsPerEx = {};
@@ -2202,30 +2203,30 @@ export default function App() {
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Activity size={18} />
-            <span className="text-xs font-bold uppercase">{t('total_workouts')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Activity size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('total_workouts')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalWorkouts}</p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Dumbbell size={18} />
-            <span className="text-xs font-bold uppercase">{t('total_sets')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Dumbbell size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('total_sets')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalSets}</p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Clock size={18} />
-            <span className="text-xs font-bold uppercase">{t('avg_duration')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Clock size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('avg_duration')}</span>
           </div>
-          <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">min</span></p>
+          <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">{t('min_label')}</span></p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Clock size={18} />
-            <span className="text-xs font-bold uppercase">{t('total_time')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Clock size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('total_time')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalHoursStr}</p>
         </Card>
@@ -2233,16 +2234,16 @@ export default function App() {
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Trophy size={18} />
-            <span className="text-xs font-bold uppercase">{t('streak')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Trophy size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('streak')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.streak}<span className="text-sm text-slate-400 ml-1">{t('weeks_label')}</span></p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400">
-            <Dumbbell size={18} />
-            <span className="text-xs font-bold uppercase">{t('fav_exercise')}</span>
+          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
+            <Dumbbell size={18} className="shrink-0" />
+            <span className="text-xs font-bold uppercase truncate">{t('fav_exercise')}</span>
           </div>
           <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
         </Card>
@@ -2327,7 +2328,7 @@ export default function App() {
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle}
-                         formatter={(v, n) => [v + ' sets', n]} />
+                         formatter={(v, n) => [v + ' ' + t('chart_sets').toLowerCase(), n]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -2336,12 +2337,22 @@ export default function App() {
           return (
             <>
               {/* Mobile: horizontal scroll-snap */}
-              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar md:hidden">
-                <ChartSlide title={t('chart_volume')}><VolumeChart /></ChartSlide>
-                <ChartSlide title={t('chart_duration')}><DurationChart /></ChartSlide>
-                <ChartSlide title={t('chart_sets')}><SetsChart /></ChartSlide>
-                <ChartSlide title={t('chart_freq')}><FreqChart /></ChartSlide>
-                <ChartSlide title={t('chart_muscle')}><MuscleChart /></ChartSlide>
+              <div className="relative md:hidden">
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar">
+                  <ChartSlide title={t('chart_volume')}><VolumeChart /></ChartSlide>
+                  <ChartSlide title={t('chart_duration')}><DurationChart /></ChartSlide>
+                  <ChartSlide title={t('chart_sets')}><SetsChart /></ChartSlide>
+                  <ChartSlide title={t('chart_freq')}><FreqChart /></ChartSlide>
+                  <ChartSlide title={t('chart_muscle')}><MuscleChart /></ChartSlide>
+                </div>
+                {/* Right-edge fade hint */}
+                <div className="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-slate-800 to-transparent pointer-events-none rounded-r-xl" />
+                {/* Scroll dot indicators */}
+                <div className="flex justify-center gap-1.5 mt-2">
+                  {[t('chart_volume'), t('chart_duration'), t('chart_sets'), t('chart_freq'), t('chart_muscle')].map((label, i) => (
+                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-600" title={label} />
+                  ))}
+                </div>
               </div>
 
               {/* Desktop: 2-column grid */}
@@ -2454,7 +2465,7 @@ export default function App() {
                </div>
                <div className="flex items-center gap-2 shrink-0 ml-2">
                  <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 text-blue-400 font-bold text-sm">
-                   {s.duration} min
+                   {s.duration} {t('min_label')}
                  </div>
                  <button onClick={() => deleteSession(s.id)} className="text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
                    <Trash2 size={16}/>
