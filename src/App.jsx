@@ -1760,6 +1760,7 @@ export default function App() {
   const [pendingImport, setPendingImport] = useState(null); // null | { name, exercises }
   const [showExerciseReorder, setShowExerciseReorder] = useState(false);
   const [chartRange, setChartRange] = useState('1M');
+  const [chartActiveIndex, setChartActiveIndex] = useState(0);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -2201,52 +2202,54 @@ export default function App() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Activity size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_workouts')}</span>
-          </div>
-          <p className="text-3xl font-black text-white">{stats.totalWorkouts}</p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Dumbbell size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_sets')}</span>
-          </div>
-          <p className="text-3xl font-black text-white">{stats.totalSets}</p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Clock size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('avg_duration')}</span>
-          </div>
-          <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">{t('min_label')}</span></p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Clock size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_time')}</span>
-          </div>
-          <p className="text-3xl font-black text-white">{stats.totalHoursStr}</p>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Trophy size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('streak')}</span>
-          </div>
-          <p className="text-3xl font-black text-white">{stats.streak}<span className="text-sm text-slate-400 ml-1">{t('weeks_label')}</span></p>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
-            <Dumbbell size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate min-w-0">{t('fav_exercise')}</span>
-          </div>
-          <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
-        </Card>
+      {/* Stat cards — single horizontal scroll row */}
+      <div className="relative">
+        <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-1 no-scrollbar">
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Activity size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('total_workouts')}</span>
+            </div>
+            <p className="text-3xl font-black text-white">{stats.totalWorkouts}</p>
+          </Card>
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Dumbbell size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('total_sets')}</span>
+            </div>
+            <p className="text-3xl font-black text-white">{stats.totalSets}</p>
+          </Card>
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Clock size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('avg_duration')}</span>
+            </div>
+            <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">{t('min_label')}</span></p>
+          </Card>
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Clock size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('total_time')}</span>
+            </div>
+            <p className="text-3xl font-black text-white">{stats.totalHoursStr}</p>
+          </Card>
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Trophy size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('streak')}</span>
+            </div>
+            <p className="text-3xl font-black text-white">{stats.streak}<span className="text-sm text-slate-400 ml-1">{t('weeks_label')}</span></p>
+          </Card>
+          <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Dumbbell size={16} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{t('fav_exercise')}</span>
+            </div>
+            <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
+          </Card>
+        </div>
+        {/* Right-edge fade scroll hint */}
+        <div className="absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
       </div>
 
       <Card className="p-5">
@@ -2338,7 +2341,13 @@ export default function App() {
             <>
               {/* Mobile: horizontal scroll-snap */}
               <div className="relative md:hidden">
-                <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar">
+                <div
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar"
+                  onScroll={(e) => {
+                    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth);
+                    setChartActiveIndex(idx);
+                  }}
+                >
                   <ChartSlide title={t('chart_volume')}><VolumeChart /></ChartSlide>
                   <ChartSlide title={t('chart_duration')}><DurationChart /></ChartSlide>
                   <ChartSlide title={t('chart_sets')}><SetsChart /></ChartSlide>
@@ -2350,7 +2359,11 @@ export default function App() {
                 {/* Scroll dot indicators */}
                 <div className="flex justify-center gap-1.5 mt-2">
                   {[t('chart_volume'), t('chart_duration'), t('chart_sets'), t('chart_freq'), t('chart_muscle')].map((label, i) => (
-                    <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-600" title={label} />
+                    <div
+                      key={i}
+                      title={label}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${chartActiveIndex === i ? 'w-4 bg-blue-400' : 'w-1.5 bg-slate-600'}`}
+                    />
                   ))}
                 </div>
               </div>
