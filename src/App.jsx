@@ -29,7 +29,9 @@ import {
   Youtube,
   Image,
   Camera,
-  AlertCircle
+  AlertCircle,
+  Pencil,
+  Zap
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -90,6 +92,9 @@ const TRANSLATIONS = {
     new_exercise: 'Nuevo ejercicio',
     exercise_name_placeholder: 'Nombre del ejercicio',
     add: 'Agregar',
+    edit_routine: 'Editar Rutina',
+    add_exercise: 'Agregar Ejercicio',
+    focus_mode: 'Modo Enfoque',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -182,6 +187,7 @@ const TRANSLATIONS = {
       hs_row: 'Remo Hammer',
       hs_pulldown: 'Jalón Hammer',
       chest_supported: 'Remo Pecho Apoyado',
+      rev_pec_fly: 'Pec Fly Inverso',
       hs_leg_press: 'Prensa Hammer',
       fem_sent: 'Curl Femoral Sentado',
       bulgarian: 'Sentadilla Búlgara',
@@ -241,6 +247,9 @@ const TRANSLATIONS = {
     new_exercise: 'New exercise',
     exercise_name_placeholder: 'Exercise name',
     add: 'Add',
+    edit_routine: 'Edit Routine',
+    add_exercise: 'Add Exercise',
+    focus_mode: 'Focus Mode',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -333,6 +342,7 @@ const TRANSLATIONS = {
       hs_row: 'Hammer Strength Row',
       hs_pulldown: 'Hammer Strength Pulldown',
       chest_supported: 'Chest Supported Row',
+      rev_pec_fly: 'Reverse Pec Fly',
       hs_leg_press: 'Hammer Strength Leg Press',
       fem_sent: 'Seated Leg Curl',
       bulgarian: 'Bulgarian Split Squat',
@@ -392,6 +402,9 @@ const TRANSLATIONS = {
     new_exercise: 'Nouvel exercice',
     exercise_name_placeholder: 'Nom de l\'exercice',
     add: 'Ajouter',
+    edit_routine: 'Modifier la Routine',
+    add_exercise: 'Ajouter un Exercice',
+    focus_mode: 'Mode Focus',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -484,6 +497,7 @@ const TRANSLATIONS = {
       hs_row: 'Rowing Hammer',
       hs_pulldown: 'Tirage Hammer',
       chest_supported: 'Rowing Poitrine Appuyé',
+      rev_pec_fly: 'Pec Fly Inversé',
       hs_leg_press: 'Presse Jambes Hammer',
       fem_sent: 'Leg Curl Assis',
       bulgarian: 'Squat Bulgare',
@@ -705,6 +719,7 @@ const EXERCISE_CATALOG = [
   { id: 'hs_row',          name: 'Remo Hammer',            muscle: 'Espalda' },
   { id: 'hs_pulldown',     name: 'Jalón Hammer',           muscle: 'Espalda' },
   { id: 'chest_supported', name: 'Remo Pecho Apoyado',     muscle: 'Espalda' },
+  { id: 'rev_pec_fly',     name: 'Pec Fly Inverso',        muscle: 'Espalda' },
   // Pierna - nuevos
   { id: 'hs_leg_press', name: 'Prensa Hammer',          muscle: 'Pierna' },
   { id: 'fem_sent',     name: 'Curl Femoral Sentado',   muscle: 'Pierna' },
@@ -882,9 +897,9 @@ const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName, allExe
 };
 
 // --- Routine Creation Form (module-level so its reference is stable across App re-renders) ---
-const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel, exercises, onAddCustomExercise }) => {
-  const [name, setName] = useState('');
-  const [selectedExercises, setSelectedExercises] = useState([]);
+const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel, exercises, onAddCustomExercise, initialName = '', initialExercises = [] }) => {
+  const [name, setName] = useState(initialName);
+  const [selectedExercises, setSelectedExercises] = useState(initialExercises);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [customName, setCustomName] = useState('');
@@ -913,7 +928,7 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-4">
           <button onClick={onCancel} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft /></button>
-          <h3 className="text-xl font-bold text-white">{t('new_routine')}</h3>
+          <h3 className="text-xl font-bold text-white">{initialName ? t('edit_routine') : t('new_routine')}</h3>
         </div>
         <input
           className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none mb-4 font-bold"
@@ -1088,6 +1103,7 @@ export default function App() {
 
   // Controls whether the creation form is shown (in App so it survives anatomy modal re-renders)
   const [isCreating, setIsCreating] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState(null);
 
   const [customExercises, setCustomExercises] = useState(() => {
     try { return JSON.parse(localStorage.getItem('gym_custom_exercises') || '[]'); }
@@ -1096,6 +1112,9 @@ export default function App() {
 
   // ActiveWorkoutView state lifted to avoid remount when App re-renders
   const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
+  const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
+  const [workoutPickerSearch, setWorkoutPickerSearch] = useState('');
+  const [focusMode, setFocusMode] = useState(false);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -1244,6 +1263,7 @@ export default function App() {
     setHistory([newSession, ...history]);
     setActiveWorkout(null);
     setWorkoutSelectedExercise(null);
+    setFocusMode(false);
     setActiveTab('dashboard');
   };
 
@@ -1251,6 +1271,7 @@ export default function App() {
     triggerConfirm(t('cancel_workout'), t('cancel_msg'), () => {
       setActiveWorkout(null);
       setWorkoutSelectedExercise(null);
+      setFocusMode(false);
       setActiveTab('routines');
     });
   };
@@ -1275,6 +1296,10 @@ export default function App() {
     setRoutines([...routines, { id: Date.now().toString(), name, exercises }]);
   };
 
+  const updateRoutine = (id, name, exercises) => {
+    setRoutines(prev => prev.map(r => r.id === id ? { ...r, name, exercises } : r));
+  };
+
   const deleteRoutine = (id) => {
      triggerConfirm(t('delete_routine'), t('delete_msg'), () => {
         setRoutines(prev => prev.filter(r => r.id !== id));
@@ -1292,6 +1317,15 @@ export default function App() {
       ...prev,
       { id: `custom_${Date.now()}`, name, muscle }
     ]);
+  };
+
+  const addExerciseToWorkout = (exId) => {
+    setRoutines(prev => prev.map(r =>
+      r.id === activeWorkout.routineId ? { ...r, exercises: [...r.exercises, exId] } : r
+    ));
+    setWorkoutSelectedExercise(exId);
+    setShowWorkoutPicker(false);
+    setWorkoutPickerSearch('');
   };
 
   // --- Settings Modal ---
@@ -1463,7 +1497,10 @@ export default function App() {
                 <h3 className="font-bold text-xl text-white mb-1">{routine.name}</h3>
                 <p className="text-slate-400 text-sm">{routine.exercises.length} {t('exercises')}</p>
               </div>
-              <button onClick={() => deleteRoutine(routine.id)} className="text-slate-600 hover:text-red-400 p-2"><Trash2 size={18} /></button>
+              <div className="flex gap-1">
+                <button onClick={() => setEditingRoutine(routine)} className="text-slate-600 hover:text-blue-400 p-2"><Pencil size={18} /></button>
+                <button onClick={() => deleteRoutine(routine.id)} className="text-slate-600 hover:text-red-400 p-2"><Trash2 size={18} /></button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
               {routine.exercises.slice(0, 3).map((ex, i) => (
@@ -1521,13 +1558,15 @@ export default function App() {
 
     return (
       <div className="flex flex-col h-full animate-in slide-in-from-bottom">
-        <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur shrink-0">
-          <div className="flex items-center gap-2 px-2">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-             <span className="text-sm font-bold text-white">{activeWorkout.routineName}</span>
+        {!focusMode && (
+          <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur shrink-0">
+            <div className="flex items-center gap-2 px-2">
+               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+               <span className="text-sm font-bold text-white">{activeWorkout.routineName}</span>
+            </div>
+            <button onClick={handleCancelWorkout} className="p-2 text-slate-400 hover:text-red-400"><X size={20}/></button>
           </div>
-          <button onClick={handleCancelWorkout} className="p-2 text-slate-400 hover:text-red-400"><X size={20}/></button>
-        </div>
+        )}
 
         <div className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
           {routine.exercises.map(ex => {
@@ -1538,7 +1577,7 @@ export default function App() {
             if (!info) info = allExercises.find(e => e.name === ex);
 
             return (
-              <button key={ex} onClick={() => setSelectedExercise(ex)} 
+              <button key={ex} onClick={() => setSelectedExercise(ex)}
                 className={`
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border
                   ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}
@@ -1550,40 +1589,59 @@ export default function App() {
               </button>
             )
           })}
+          <button
+            onClick={() => setShowWorkoutPicker(true)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+          >
+            <Plus size={18} />
+          </button>
+          <button
+            onClick={() => setFocusMode(prev => !prev)}
+            className={`flex items-center justify-center w-10 h-10 rounded-full border shrink-0 transition-all ${
+              focusMode
+                ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/30'
+                : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white'
+            }`}
+            title={t('focus_mode')}
+          >
+            <Zap size={16} />
+          </button>
         </div>
 
         <Card className="p-5 mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
           {/* Header con Nombre y Botones de Ayuda */}
-          <div className="flex items-center justify-between mb-5 gap-3">
-            <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
-              {getExName(selectedExercise)}
-            </h2>
-            <div className="flex gap-1.5 shrink-0">
-              <button
-                onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
-                className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
-                title={t('watch_tutorial')}
-              >
-                <Youtube size={20} fill="currentColor" />
-              </button>
-              <button
-                onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
-                className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
-                title={t('view_images')}
-              >
-                <Image size={20} />
-              </button>
-              <button
-                onClick={() => setAnatomyExercise(selectedExercise)}
-                className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
-                title={t('view_anatomy')}
-              >
-                <Camera size={20} />
-              </button>
+          {!focusMode && (
+            <div className="flex items-center justify-between mb-5 gap-3">
+              <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
+                {getExName(selectedExercise)}
+              </h2>
+              <div className="flex gap-1.5 shrink-0">
+                <button
+                  onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
+                  className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
+                  title={t('watch_tutorial')}
+                >
+                  <Youtube size={20} fill="currentColor" />
+                </button>
+                <button
+                  onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
+                  className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
+                  title={t('view_images')}
+                >
+                  <Image size={20} />
+                </button>
+                <button
+                  onClick={() => setAnatomyExercise(selectedExercise)}
+                  className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
+                  title={t('view_anatomy')}
+                >
+                  <Camera size={20} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           
           <form onSubmit={handleAdd} className="flex items-end gap-3">
             <div className="flex-1">
@@ -1614,35 +1672,79 @@ export default function App() {
           </form>
         </Card>
 
-        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-          <div className="flex items-center justify-between px-2 mb-2">
-             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
-             <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
-          </div>
-          {((activeWorkout.logs[selectedExercise] || []).slice().reverse()).map((set, i, arr) => {
-            const realIndex = arr.length - 1 - i;
-            return (
-              <div key={realIndex} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
-                <div className="flex items-center gap-4">
-                  <span className="text-slate-500 font-mono text-sm">#{realIndex + 1}</span>
-                  <div className="flex items-baseline gap-1">
-                     <span className="text-xl font-black text-white">{set.weight}</span>
-                     <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
-                     <span className="text-xl font-black text-white">{set.reps}</span>
-                     <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
+        {!focusMode && (
+          <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+            <div className="flex items-center justify-between px-2 mb-2">
+               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
+               <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
+            </div>
+            {((activeWorkout.logs[selectedExercise] || []).slice().reverse()).map((set, i, arr) => {
+              const realIndex = arr.length - 1 - i;
+              return (
+                <div key={realIndex} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
+                  <div className="flex items-center gap-4">
+                    <span className="text-slate-500 font-mono text-sm">#{realIndex + 1}</span>
+                    <div className="flex items-baseline gap-1">
+                       <span className="text-xl font-black text-white">{set.weight}</span>
+                       <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
+                       <span className="text-xl font-black text-white">{set.reps}</span>
+                       <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
+                    </div>
                   </div>
+                  <button onClick={() => deleteSet(selectedExercise, realIndex)} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
                 </div>
-                <button onClick={() => deleteSet(selectedExercise, realIndex)} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
 
         <div className="pt-3 pb-2 shrink-0">
           <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
             {t('finish_workout')}
           </Button>
         </div>
+
+        {showWorkoutPicker && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[75vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-slate-800">
+                <h3 className="font-bold text-white">{t('add_exercise')}</h3>
+                <button onClick={() => setShowWorkoutPicker(false)}><X size={20} className="text-slate-400" /></button>
+              </div>
+              <div className="relative px-4 py-3">
+                <Search className="absolute left-7 top-5.5 text-slate-500" size={16} />
+                <input
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-white outline-none text-sm"
+                  placeholder={t('search_placeholder')}
+                  value={workoutPickerSearch}
+                  onChange={e => setWorkoutPickerSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
+                {allExercises
+                  .filter(ex => !routine.exercises.includes(ex.id))
+                  .filter(ex => {
+                    const name = t('ex_names')[ex.id] || ex.name;
+                    const muscle = t('muscles')[ex.muscle] || ex.muscle;
+                    return name.toLowerCase().includes(workoutPickerSearch.toLowerCase())
+                      || muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
+                  })
+                  .map(ex => (
+                    <div key={ex.id}
+                      onClick={() => addExerciseToWorkout(ex.id)}
+                      className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 cursor-pointer transition-all">
+                      <MuscleIcon muscle={ex.muscle} className="w-5 h-5 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-white text-sm">{getExName(ex.id)}</p>
+                        <p className="text-xs text-slate-500 uppercase font-bold">{getMuscleName(ex.muscle)}</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1705,7 +1807,7 @@ export default function App() {
 
         <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${activeTab === 'workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
           {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'routines' && isCreating && (
+          {activeTab === 'routines' && (isCreating || editingRoutine) && (
             <RoutineCreationForm
               t={t}
               getExName={getExName}
@@ -1714,13 +1816,18 @@ export default function App() {
               openVideoSearch={openVideoSearch}
               openImageSearch={openImageSearch}
               onOpenAnatomy={setAnatomyExercise}
-              onSave={(name, exercises) => { addNewRoutine(name, exercises); setIsCreating(false); }}
-              onCancel={() => setIsCreating(false)}
+              initialName={editingRoutine?.name || ''}
+              initialExercises={editingRoutine?.exercises || []}
+              onSave={(name, exercises) => {
+                if (editingRoutine) { updateRoutine(editingRoutine.id, name, exercises); setEditingRoutine(null); }
+                else { addNewRoutine(name, exercises); setIsCreating(false); }
+              }}
+              onCancel={() => { setIsCreating(false); setEditingRoutine(null); }}
               exercises={allExercises}
               onAddCustomExercise={addCustomExercise}
             />
           )}
-          {activeTab === 'routines' && !isCreating && <RoutinesView />}
+          {activeTab === 'routines' && !isCreating && !editingRoutine && <RoutinesView />}
           {activeTab === 'workout' && <ActiveWorkoutView />}
           {activeTab === 'history' && <HistoryView />}
         </main>
