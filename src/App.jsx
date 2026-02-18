@@ -70,6 +70,7 @@ const TRANSLATIONS = {
     cancel_workout: '¿Cancelar entrenamiento?',
     cancel_msg: 'Se perderá el progreso actual.',
     delete_routine: '¿Borrar rutina?',
+    delete_session: '¿Borrar entrenamiento?',
     delete_msg: 'Esta acción no se puede deshacer.',
     confirm: 'Confirmar',
     cancel: 'Cancelar',
@@ -196,6 +197,7 @@ const TRANSLATIONS = {
     cancel_workout: 'Cancel workout?',
     cancel_msg: 'Current progress will be lost.',
     delete_routine: 'Delete routine?',
+    delete_session: 'Delete training?',
     delete_msg: 'This action cannot be undone.',
     confirm: 'Confirm',
     cancel: 'Cancel',
@@ -322,6 +324,7 @@ const TRANSLATIONS = {
     cancel_workout: 'Annuler la séance ?',
     cancel_msg: 'Les progrès actuels seront perdus.',
     delete_routine: 'Supprimer routine ?',
+    delete_session: 'Supprimer séance ?',
     delete_msg: 'Cette action est irréversible.',
     confirm: 'Confirmer',
     cancel: 'Annuler',
@@ -1000,6 +1003,12 @@ export default function App() {
      });
   };
 
+  const deleteSession = (id) => {
+    triggerConfirm(t('delete_session'), t('delete_msg'), () => {
+      setHistory(prev => prev.filter(s => s.id !== id));
+    });
+  };
+
   // --- Settings Modal ---
   const SettingsModal = () => (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
@@ -1466,15 +1475,20 @@ export default function App() {
         history.map(s => (
           <Card key={s.id} className="p-5">
              <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-               <div>
-                 <h3 className="font-bold text-white text-lg">{s.routineName}</h3>
+               <div className="flex-1 min-w-0">
+                 <h3 className="font-bold text-white text-lg truncate">{s.routineName}</h3>
                  <div className="flex items-center gap-2 text-slate-400 text-xs mt-1">
                    <Calendar size={12}/>
                    {new Date(s.date).toLocaleDateString(lang === 'es' ? 'es-MX' : lang === 'fr' ? 'fr-FR' : 'en-US', {weekday: 'long', day:'numeric', month:'short'})}
                  </div>
                </div>
-               <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 text-blue-400 font-bold text-sm">
-                 {s.duration} min
+               <div className="flex items-center gap-2 shrink-0 ml-2">
+                 <div className="bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 text-blue-400 font-bold text-sm">
+                   {s.duration} min
+                 </div>
+                 <button onClick={() => deleteSession(s.id)} className="text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+                   <Trash2 size={16}/>
+                 </button>
                </div>
              </div>
              <div className="space-y-2">
