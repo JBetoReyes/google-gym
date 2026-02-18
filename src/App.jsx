@@ -61,8 +61,6 @@ import {
   AreaChart,
   Area,
   ReferenceLine,
-  RadialBarChart,
-  RadialBar,
   PieChart,
   Pie,
   Cell,
@@ -1789,21 +1787,36 @@ const SetsChart = React.memo(function SetsChart({ data }) {
 });
 
 const GoalRingChart = React.memo(function GoalRingChart({ sessionsThisWeek, weeklyGoal, t }) {
-  const pct = Math.min((sessionsThisWeek / weeklyGoal) * 100, 100);
-  const color = pct >= 100 ? '#10b981' : '#3b82f6';
-  const ringData = [{ value: pct, fill: color }];
+  const pct = Math.min(sessionsThisWeek / Math.max(weeklyGoal, 1), 1);
+  const color = pct >= 1 ? '#10b981' : '#3b82f6';
+  const size = 148;
+  const strokeWidth = 18;
+  const r = (size - strokeWidth) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const dash = circumference * pct;
+  const gap = circumference - dash;
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      <ResponsiveContainer width="100%" height="100%">
-        <RadialBarChart cx="50%" cy="50%" innerRadius="55%" outerRadius="85%"
-          startAngle={90} endAngle={-270} data={ringData} barSize={14}>
-          <RadialBar dataKey="value" cornerRadius={7} background={{ fill: '#1e293b' }} />
-        </RadialBarChart>
-      </ResponsiveContainer>
-      <div className="absolute flex flex-col items-center pointer-events-none">
-        <span className="text-2xl font-black text-white">{sessionsThisWeek}</span>
-        <span className="text-[10px] text-slate-400 leading-tight">/ {weeklyGoal} {t('sessions_label')}</span>
-        <span className="text-[10px] font-bold mt-0.5" style={{ color }}>{t('this_week')}</span>
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1e293b" strokeWidth={strokeWidth} />
+          <circle
+            cx={cx} cy={cy} r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${gap}`}
+            style={{ transition: 'stroke-dasharray 0.6s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+          <span className="text-3xl font-black text-white leading-none">{sessionsThisWeek}</span>
+          <span className="text-[11px] text-slate-400 leading-none">/ {weeklyGoal} {t('sessions_label')}</span>
+          <span className="text-[10px] font-bold leading-none mt-1" style={{ color }}>{t('this_week')}</span>
+        </div>
       </div>
     </div>
   );
