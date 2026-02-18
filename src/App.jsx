@@ -53,12 +53,16 @@ import {
   BarChart,
   Bar,
   XAxis,
-  YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  ReferenceLine,
+  RadialBarChart,
+  RadialBar,
   PieChart,
   Pie,
   Cell,
@@ -1699,41 +1703,67 @@ const VolumeChart = React.memo(function VolumeChart({ data }) {
 });
 
 const DurationChart = React.memo(function DurationChart({ data }) {
+  const avg = data.length > 0 ? Math.round(data.reduce((s, d) => s + (d.duration || 0), 0) / data.length) : 0;
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} barSize={12}>
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="durGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.35} />
+            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
         <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="duration" fill="#8b5cf6" radius={[4,4,0,0]} />
-      </BarChart>
+        <Tooltip contentStyle={tooltipStyle} wrapperStyle={{ outline: 'none' }} cursor={{ stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '4 4' }} />
+        {avg > 0 && <ReferenceLine y={avg} stroke="#8b5cf6" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: `avg ${avg}min`, position: 'insideTopRight', fill: '#a78bfa', fontSize: 9 }} />}
+        <Area type="monotone" dataKey="duration" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#durGrad)" dot={false} activeDot={{ r: 4, fill: '#8b5cf6' }} />
+      </AreaChart>
     </ResponsiveContainer>
   );
 });
 
 const SetsChart = React.memo(function SetsChart({ data }) {
+  const avg = data.length > 0 ? Math.round(data.reduce((s, d) => s + (d.sets || 0), 0) / data.length) : 0;
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} barSize={12}>
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="setsGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
         <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="sets" fill="#10b981" radius={[4,4,0,0]} />
-      </BarChart>
+        <Tooltip contentStyle={tooltipStyle} wrapperStyle={{ outline: 'none' }} cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '4 4' }} />
+        {avg > 0 && <ReferenceLine y={avg} stroke="#10b981" strokeDasharray="4 4" strokeOpacity={0.5} label={{ value: `avg ${avg}`, position: 'insideTopRight', fill: '#6ee7b7', fontSize: 9 }} />}
+        <Area type="monotone" dataKey="sets" stroke="#10b981" strokeWidth={2.5} fill="url(#setsGrad)" dot={false} activeDot={{ r: 4, fill: '#10b981' }} />
+      </AreaChart>
     </ResponsiveContainer>
   );
 });
 
-const FreqChart = React.memo(function FreqChart({ data }) {
+const GoalRingChart = React.memo(function GoalRingChart({ freqData, weeklyGoal, t }) {
+  const avg = freqData.length > 0
+    ? freqData.reduce((s, w) => s + w.count, 0) / freqData.length
+    : 0;
+  const pct = Math.min(Math.round((avg / weeklyGoal) * 100), 100);
+  const ringData = [{ value: pct, fill: pct >= 100 ? '#10b981' : '#3b82f6' }];
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} barSize={12}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-        <XAxis dataKey="week" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="count" fill="#f59e0b" radius={[4,4,0,0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="relative w-full h-full flex items-center justify-center">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadialBarChart cx="50%" cy="50%" innerRadius="55%" outerRadius="85%"
+          startAngle={90} endAngle={-270} data={ringData} barSize={14}>
+          <RadialBar dataKey="value" cornerRadius={7} background={{ fill: '#1e293b' }} />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="absolute flex flex-col items-center pointer-events-none">
+        <span className="text-2xl font-black text-white">{avg.toFixed(1)}</span>
+        <span className="text-[10px] text-slate-400 leading-tight">/ {weeklyGoal} {t('sessions_label')}</span>
+        <span className="text-[10px] font-bold mt-0.5" style={{ color: pct >= 100 ? '#10b981' : '#3b82f6' }}>{pct}%</span>
+      </div>
+    </div>
   );
 });
 
@@ -1755,7 +1785,7 @@ const MuscleChart = React.memo(function MuscleChart({ data, setsLabel }) {
 
 const CHART_LABELS_KEY = ['chart_volume', 'chart_duration', 'chart_sets', 'chart_freq', 'chart_muscle'];
 
-const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChartRange, t }) {
+const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChartRange, weeklyGoal, t }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const labels = CHART_LABELS_KEY.map(k => t(k));
   const setsLabel = t('chart_sets').toLowerCase();
@@ -1791,7 +1821,7 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
           <ChartSlide title={t('chart_volume')}><VolumeChart data={stats.volumeData} /></ChartSlide>
           <ChartSlide title={t('chart_duration')}><DurationChart data={stats.durationData} /></ChartSlide>
           <ChartSlide title={t('chart_sets')}><SetsChart data={stats.setsData} /></ChartSlide>
-          <ChartSlide title={t('chart_freq')}><FreqChart data={stats.freqData} /></ChartSlide>
+          <ChartSlide title={t('chart_freq')}><GoalRingChart freqData={stats.freqData} weeklyGoal={weeklyGoal} t={t} /></ChartSlide>
           <ChartSlide title={t('chart_muscle')}><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></ChartSlide>
         </div>
         {/* Right-edge fade hint */}
@@ -1813,7 +1843,7 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_volume')}</p><div className="h-40"><VolumeChart data={stats.volumeData} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_duration')}</p><div className="h-40"><DurationChart data={stats.durationData} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_sets')}</p><div className="h-40"><SetsChart data={stats.setsData} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><FreqChart data={stats.freqData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><GoalRingChart freqData={stats.freqData} weeklyGoal={weeklyGoal} t={t} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-40"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
       </div>
     </Card>
@@ -2406,7 +2436,7 @@ export default function App() {
         ><ChevronRight size={14} /></button>
       </div>
 
-      <ChartSlider stats={stats} chartRange={chartRange} setChartRange={setChartRange} t={t} />
+      <ChartSlider stats={stats} chartRange={chartRange} setChartRange={setChartRange} weeklyGoal={weeklyGoal} t={t} />
     </div>
   );
 
