@@ -125,7 +125,7 @@ const TRANSLATIONS = {
     routine_qr_title: 'Código QR',
     import_routine: 'Importar Rutina',
     import_confirm: '¿Agregar esta rutina a tu lista?',
-    reorder_exercises: 'Reordenar',
+    reorder_exercises: 'Reordenar', drag_to_reorder: 'Arrastra para cambiar el orden',
     selected: 'Seleccionados',
     all: 'Todos',
     chart_volume: 'Volumen', chart_duration: 'Duración', chart_sets: 'Series',
@@ -296,7 +296,7 @@ const TRANSLATIONS = {
     routine_qr_title: 'QR Code',
     import_routine: 'Import Routine',
     import_confirm: 'Add this routine to your list?',
-    reorder_exercises: 'Reorder',
+    reorder_exercises: 'Reorder', drag_to_reorder: 'Drag to reorder',
     selected: 'Selected',
     all: 'All',
     chart_volume: 'Volume', chart_duration: 'Duration', chart_sets: 'Sets',
@@ -467,7 +467,7 @@ const TRANSLATIONS = {
     routine_qr_title: 'Code QR',
     import_routine: 'Importer Routine',
     import_confirm: 'Ajouter cette routine?',
-    reorder_exercises: 'Réordonner',
+    reorder_exercises: 'Réordonner', drag_to_reorder: 'Glisser pour réordonner',
     selected: 'Sélectionnés',
     all: 'Tous',
     chart_volume: 'Volume', chart_duration: 'Durée', chart_sets: 'Séries',
@@ -1009,6 +1009,32 @@ function SortableExerciseItem({ id, label, onRemove }) {
   );
 }
 
+function SortableReorderItem({ id, index, label }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div
+      ref={setNodeRef} style={style}
+      className={`flex items-center gap-4 rounded-2xl px-4 py-4 border transition-all ${
+        isDragging
+          ? 'bg-slate-700 border-blue-500 shadow-xl shadow-blue-900/30 scale-[1.02]'
+          : 'bg-slate-800 border-slate-700'
+      }`}
+    >
+      <span className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-black text-slate-400 shrink-0">
+        {index}
+      </span>
+      <span className="flex-1 text-white font-semibold text-base leading-tight">{label}</span>
+      <button
+        {...attributes} {...listeners}
+        className="p-2 text-slate-500 hover:text-slate-200 touch-none cursor-grab active:cursor-grabbing rounded-xl hover:bg-slate-700 transition-colors"
+      >
+        <GripVertical size={22} />
+      </button>
+    </div>
+  );
+}
+
 function QRScannerModal({ t, onScan, onClose }) {
   const videoRef = useRef(null);
   const scannerRef = useRef(null);
@@ -1052,31 +1078,49 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl p-6 max-h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="font-bold text-white">{t('reorder_exercises')}</h3>
-          <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-slate-900 rounded-t-3xl flex flex-col" style={{ height: '85vh' }}>
+
+        {/* Drag-handle pill */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-slate-700" />
         </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 shrink-0">
+          <div>
+            <h3 className="text-lg font-bold text-white">{t('reorder_exercises')}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{t('drag_to_reorder')}</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-800 transition-colors">
+            <X size={20} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Sortable list */}
         <DndContext sensors={sensors} collisionDetection={closestCenter}
           onDragEnd={({ active, over }) => {
             if (active.id !== over?.id)
               setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)));
           }}>
           <SortableContext items={order} strategy={verticalListSortingStrategy}>
-            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-              {order.map(exId => (
-                <SortableExerciseItem key={exId} id={exId} label={getExName(exId)} />
+            <div className="flex-1 overflow-y-auto min-h-0 px-6 py-4 space-y-3">
+              {order.map((exId, i) => (
+                <SortableReorderItem key={exId} id={exId} index={i + 1} label={getExName(exId)} />
               ))}
             </div>
           </SortableContext>
         </DndContext>
-        <button
-          onClick={() => onSave(order)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all active:scale-95 bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20 shadow-lg"
-        >
-          {t('save_routine')}
-        </button>
+
+        {/* Footer */}
+        <div className="px-6 pt-4 pb-8 border-t border-slate-800 shrink-0">
+          <button
+            onClick={() => onSave(order)}
+            className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-all active:scale-[0.98] shadow-lg shadow-blue-900/30"
+          >
+            {t('save_routine')}
+          </button>
+        </div>
       </div>
     </div>
   );
