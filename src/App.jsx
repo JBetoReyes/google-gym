@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   Dumbbell, 
@@ -1338,6 +1338,342 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
   );
 };
 
+// --- Module-level SetLogItem (stable reference, no remount on App re-render) ---
+const SetLogItem = React.memo(function SetLogItem({ index, weight, reps, isCardio, onDelete }) {
+  return (
+    <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
+      <div className="flex items-center gap-4">
+        <span className="text-slate-500 font-mono text-sm">#{index}</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-xl font-black text-white">{weight}</span>
+          <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
+          <span className="text-xl font-black text-white">{reps}</span>
+          <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
+        </div>
+      </div>
+      <button onClick={onDelete} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
+    </div>
+  );
+});
+
+// --- Module-level ActiveWorkoutView (stable reference, receives all data as props) ---
+const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
+  activeWorkout, routineExercises,
+  workoutSelectedExercise, focusMode,
+  showExerciseReorder, showWorkoutPicker,
+  workoutPickerSearch, workoutPickerMuscle, showWorkoutPickerFilter,
+  history, allExercises,
+  setWorkoutSelectedExercise, setFocusMode,
+  setShowExerciseReorder, setShowWorkoutPicker,
+  setWorkoutPickerSearch, setWorkoutPickerMuscle, setShowWorkoutPickerFilter,
+  logSet, deleteSet, handleCancelWorkout, handleFinishWorkout,
+  addExerciseToWorkout, reorderRoutineExercises,
+  t, getExName, getExNameEn, getMuscleName,
+  openVideoSearch, openImageSearch, setAnatomyExercise,
+}) {
+  if (!activeWorkout) return null;
+  const selectedExercise = workoutSelectedExercise ?? routineExercises[0];
+  const [weight, setWeight] = useState('');
+  const [reps, setReps] = useState('');
+  const pillContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (pillContainerRef.current) {
+      const activeEl = pillContainerRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'instant', inline: 'nearest', block: 'nearest' });
+      }
+    }
+  }, [selectedExercise]);
+
+  useEffect(() => {
+    const logs = activeWorkout.logs[selectedExercise];
+    if (logs?.length) {
+      setWeight(logs[logs.length-1].weight);
+      setReps(logs[logs.length-1].reps);
+    } else {
+      const hist = history.find(h => h.logs[selectedExercise]?.length);
+      if(hist) {
+         const last = hist.logs[selectedExercise][hist.logs[selectedExercise].length-1];
+         setWeight(last.weight);
+         setReps(last.reps);
+      } else {
+         setWeight(''); setReps('');
+      }
+    }
+  }, [selectedExercise]);
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if(!weight || !reps) return;
+    logSet(selectedExercise, weight, reps);
+  };
+
+  let exInfo = allExercises.find(e => e.id === selectedExercise);
+  if (!exInfo) exInfo = allExercises.find(e => e.name === selectedExercise);
+  const isCardio = exInfo?.muscle === 'Cardio';
+
+  const reversedLogs = useMemo(
+    () => (activeWorkout.logs[selectedExercise] || []).slice().reverse(),
+    [activeWorkout.logs, selectedExercise]
+  );
+
+  return (
+    <div className="flex flex-col h-full animate-in slide-in-from-bottom">
+      {!focusMode && (
+        <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur shrink-0">
+          <div className="flex items-center gap-2 px-2">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+             <span className="text-sm font-bold text-white">{activeWorkout.routineName}</span>
+          </div>
+          <button onClick={handleCancelWorkout} className="p-2 text-slate-400 hover:text-red-400"><X size={20}/></button>
+        </div>
+      )}
+
+      {/* Exercise pills — full width */}
+      <div ref={pillContainerRef} className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
+        {routineExercises.map(ex => {
+          const active = selectedExercise === ex;
+          const count = (activeWorkout.logs[ex] || []).length;
+          let info = allExercises.find(e => e.id === ex);
+          if (!info) info = allExercises.find(e => e.name === ex);
+          return (
+            <button key={ex} data-active={active ? "true" : "false"} onClick={() => setWorkoutSelectedExercise(ex)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+            >
+              {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
+              {getExName(ex)}
+              {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
+            </button>
+          )
+        })}
+        <button
+          onClick={() => setShowWorkoutPicker(true)}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+        >
+          <Plus size={18} />
+        </button>
+        <button
+          onClick={() => setShowExerciseReorder(true)}
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+          title={t('reorder_exercises')}
+        >
+          <GripVertical size={18} />
+        </button>
+      </div>
+
+      {/* Two-column on desktop, single-column on mobile */}
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row md:gap-6">
+        {/* Left column: exercise card */}
+        <div className={`flex flex-col ${focusMode ? 'flex-1' : 'md:w-[55%] md:shrink-0'}`}>
+          <Card className={`border border-slate-700 bg-slate-800 relative overflow-hidden ${focusMode ? 'flex-1 flex flex-col justify-center px-5 py-6' : 'p-5 mb-4 md:mb-0'}`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+
+            <div className={`flex items-center justify-between gap-3 ${focusMode ? 'mb-4' : 'mb-5'}`}>
+              <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
+                {getExName(selectedExercise)}
+              </h2>
+              <div className="flex gap-1.5 shrink-0">
+                <button
+                  onClick={() => setFocusMode(prev => !prev)}
+                  className={`p-2 rounded-full transition-all active:scale-95 flex items-center justify-center ${
+                    focusMode
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                      : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
+                  }`}
+                  title={t('focus_mode')}
+                >
+                  <Zap size={20} />
+                </button>
+                {!focusMode && (
+                  <>
+                    <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
+                      className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
+                      title={t('watch_tutorial')}>
+                      <Youtube size={20} fill="currentColor" />
+                    </button>
+                    <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
+                      className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
+                      title={t('view_images')}>
+                      <Image size={20} />
+                    </button>
+                    <button onClick={() => setAnatomyExercise(selectedExercise)}
+                      className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
+                      title={t('view_anatomy')}>
+                      <Camera size={20} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {focusMode && (() => {
+              const logs = activeWorkout.logs[selectedExercise];
+              const lastSet = logs?.length ? logs[logs.length - 1] : null;
+              return lastSet ? (
+                <p className="text-xs text-slate-500 text-center mb-4">
+                  {t('last_set')} {lastSet.weight}{isCardio ? '' : 'kg'} × {lastSet.reps}{isCardio ? 'min' : ''}
+                </p>
+              ) : null;
+            })()}
+
+            <form onSubmit={handleAdd} className="flex items-end gap-3">
+              <div className="flex-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
+                  {isCardio ? t('level') : t('weight')} (kg)
+                </label>
+                <input
+                  type="number" inputMode="decimal"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
+                  placeholder="0"
+                  value={weight} onChange={e => setWeight(e.target.value)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
+                  {isCardio ? t('time') : t('reps')}
+                </label>
+                <input
+                  type="number" inputMode="numeric"
+                  className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
+                  placeholder="0"
+                  value={reps} onChange={e => setReps(e.target.value)}
+                />
+              </div>
+              <button
+                type="submit"
+                className={`flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50 ${
+                  focusMode ? 'h-24 w-24' : 'h-16 w-16'
+                }`}
+              >
+                <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
+              </button>
+            </form>
+          </Card>
+        </div>
+
+        {/* Right column: sets log + finish (hidden in focus mode) */}
+        {!focusMode && (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
+              <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+              {reversedLogs.map((set, i, arr) => {
+                const realIndex = arr.length - 1 - i;
+                return (
+                  <SetLogItem
+                    key={realIndex}
+                    index={realIndex + 1}
+                    weight={set.weight}
+                    reps={set.reps}
+                    isCardio={isCardio}
+                    onDelete={() => deleteSet(selectedExercise, realIndex)}
+                  />
+                );
+              })}
+            </div>
+            <div className="pt-3 pb-2 shrink-0">
+              <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
+                {t('finish_workout')}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showExerciseReorder && (
+        <ExerciseReorderModal
+          exercises={routineExercises}
+          getExName={getExName}
+          t={t}
+          onSave={(newOrder) => {
+            reorderRoutineExercises(activeWorkout.routineId, newOrder);
+            setShowExerciseReorder(false);
+          }}
+          onClose={() => setShowExerciseReorder(false)}
+        />
+      )}
+
+      {showWorkoutPicker && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[75vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <h3 className="font-bold text-white">{t('add_exercise')}</h3>
+              <button onClick={() => { setShowWorkoutPicker(false); setWorkoutPickerMuscle('all'); setShowWorkoutPickerFilter(false); }}><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="px-4 pt-3 pb-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                <input
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-white outline-none text-sm"
+                  placeholder={t('search_placeholder')}
+                  value={workoutPickerSearch}
+                  onChange={e => setWorkoutPickerSearch(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  onClick={() => setShowWorkoutPickerFilter(v => !v)}
+                  className={`absolute right-2 top-1.5 p-1.5 rounded-lg transition-colors ${
+                    showWorkoutPickerFilter || workoutPickerMuscle !== 'all'
+                      ? 'text-blue-400 bg-blue-500/20'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <ListFilter size={16} />
+                </button>
+              </div>
+              {showWorkoutPickerFilter && (
+                <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
+                  {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+                    <button
+                      key={m}
+                      onClick={() => setWorkoutPickerMuscle(m)}
+                      className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                        workoutPickerMuscle === m
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      {m === 'all' ? t('all') : (t('muscles')[m] || m)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
+              {allExercises
+                .filter(ex => !routineExercises.includes(ex.id))
+                .filter(ex => {
+                  const name = t('ex_names')[ex.id] || ex.name;
+                  const muscle = t('muscles')[ex.muscle] || ex.muscle;
+                  const matchesSearch = !workoutPickerSearch ||
+                    name.toLowerCase().includes(workoutPickerSearch.toLowerCase()) ||
+                    muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
+                  const matchesMuscle = workoutPickerMuscle === 'all' || ex.muscle === workoutPickerMuscle;
+                  return matchesSearch && matchesMuscle;
+                })
+                .map(ex => (
+                  <div key={ex.id}
+                    onClick={() => addExerciseToWorkout(ex.id)}
+                    className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 cursor-pointer transition-all">
+                    <MuscleIcon muscle={ex.muscle} className="w-5 h-5 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-white text-sm">{getExName(ex.id)}</p>
+                      <p className="text-xs text-slate-500 uppercase font-bold">{getMuscleName(ex.muscle)}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+});
+
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'en');
   const t = (key) => TRANSLATIONS[lang][key] || key;
@@ -1434,6 +1770,8 @@ export default function App() {
   });
 
   const fileInputRef = useRef(null);
+  const activeWorkoutRef = useRef(activeWorkout);
+  useEffect(() => { activeWorkoutRef.current = activeWorkout; }, [activeWorkout]);
   
   useEffect(() => { localStorage.setItem('gym_routines', JSON.stringify(routines)); }, [routines]);
   useEffect(() => { localStorage.setItem('gym_history', JSON.stringify(history)); }, [history]);
@@ -1685,20 +2023,19 @@ export default function App() {
     });
   };
 
-  const logSet = (exerciseId, weight, reps) => {
-    setActiveWorkout(prev => {
-      const currentLogs = prev.logs[exerciseId] || [];
-      return { ...prev, logs: { ...prev.logs, [exerciseId]: [...currentLogs, { weight, reps }] } };
-    });
-  };
+  const logSet = useCallback((exerciseId, weight, reps) => {
+    setActiveWorkout(prev => ({
+      ...prev,
+      logs: { ...prev.logs, [exerciseId]: [...(prev.logs[exerciseId] || []), { weight, reps }] }
+    }));
+  }, []);
 
-  const deleteSet = (exerciseId, index) => {
-    setActiveWorkout(prev => {
-      const currentLogs = prev.logs[exerciseId] || [];
-      const newLogs = currentLogs.filter((_, i) => i !== index);
-      return { ...prev, logs: { ...prev.logs, [exerciseId]: newLogs } };
-    });
-  };
+  const deleteSet = useCallback((exerciseId, index) => {
+    setActiveWorkout(prev => ({
+      ...prev,
+      logs: { ...prev.logs, [exerciseId]: prev.logs[exerciseId].filter((_, i) => i !== index) }
+    }));
+  }, []);
 
   const addNewRoutine = (name, exercises) => {
     if (!name || exercises.length === 0) return;
@@ -1715,9 +2052,9 @@ export default function App() {
      });
   };
 
-  const reorderRoutineExercises = (routineId, newExercises) => {
+  const reorderRoutineExercises = useCallback((routineId, newExercises) => {
     setRoutines(prev => prev.map(r => r.id === routineId ? { ...r, exercises: newExercises } : r));
-  };
+  }, []);
 
   const deleteSession = (id) => {
     triggerConfirm(t('delete_session'), t('delete_msg'), () => {
@@ -1732,14 +2069,15 @@ export default function App() {
     ]);
   };
 
-  const addExerciseToWorkout = (exId) => {
+  const addExerciseToWorkout = useCallback((exId) => {
+    const routineId = activeWorkoutRef.current?.routineId;
     setRoutines(prev => prev.map(r =>
-      r.id === activeWorkout.routineId ? { ...r, exercises: [...r.exercises, exId] } : r
+      r.id === routineId ? { ...r, exercises: [...r.exercises, exId] } : r
     ));
     setWorkoutSelectedExercise(exId);
     setShowWorkoutPicker(false);
     setWorkoutPickerSearch('');
-  };
+  }, []);
 
   // --- Settings Modal ---
   const SettingsModal = () => (
@@ -2095,314 +2433,6 @@ export default function App() {
     );
   };
 
-  const ActiveWorkoutView = () => {
-    if (!activeWorkout) return null;
-    const routine = routines.find(r => r.id === activeWorkout.routineId) || { exercises: [] };
-    const selectedExercise = workoutSelectedExercise ?? routine.exercises[0];
-    const setSelectedExercise = setWorkoutSelectedExercise;
-    const [weight, setWeight] = useState('');
-    const [reps, setReps] = useState('');
-    const pillContainerRef = useRef(null);
-    useEffect(() => {
-      if (pillContainerRef.current) {
-        const activeEl = pillContainerRef.current.querySelector('[data-active="true"]');
-        if (activeEl) {
-          activeEl.scrollIntoView({ behavior: 'instant', inline: 'nearest', block: 'nearest' });
-        }
-      }
-    });
-
-    useEffect(() => {
-      const logs = activeWorkout.logs[selectedExercise];
-      if (logs?.length) {
-        setWeight(logs[logs.length-1].weight);
-        setReps(logs[logs.length-1].reps);
-      } else {
-        const hist = history.find(h => h.logs[selectedExercise]?.length);
-        if(hist) {
-           const last = hist.logs[selectedExercise][hist.logs[selectedExercise].length-1];
-           setWeight(last.weight);
-           setReps(last.reps);
-        } else {
-           setWeight(''); setReps('');
-        }
-      }
-    }, [selectedExercise]);
-
-    const handleAdd = (e) => {
-      e.preventDefault();
-      if(!weight || !reps) return;
-      logSet(selectedExercise, weight, reps);
-    };
-
-    // Resolver info del ejercicio (manejando IDs o Nombres legacy)
-    let exInfo = allExercises.find(e => e.id === selectedExercise);
-    if (!exInfo) exInfo = allExercises.find(e => e.name === selectedExercise);
-
-    const isCardio = exInfo?.muscle === 'Cardio';
-
-    return (
-      <div className="flex flex-col h-full animate-in slide-in-from-bottom">
-        {!focusMode && (
-          <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur shrink-0">
-            <div className="flex items-center gap-2 px-2">
-               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-sm font-bold text-white">{activeWorkout.routineName}</span>
-            </div>
-            <button onClick={handleCancelWorkout} className="p-2 text-slate-400 hover:text-red-400"><X size={20}/></button>
-          </div>
-        )}
-
-        {/* Exercise pills — full width */}
-        <div ref={pillContainerRef} className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
-          {routine.exercises.map(ex => {
-            const active = selectedExercise === ex;
-            const count = (activeWorkout.logs[ex] || []).length;
-            let info = allExercises.find(e => e.id === ex);
-            if (!info) info = allExercises.find(e => e.name === ex);
-            return (
-              <button key={ex} data-active={active ? "true" : "false"} onClick={() => setSelectedExercise(ex)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
-              >
-                {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
-                {getExName(ex)}
-                {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
-              </button>
-            )
-          })}
-          <button
-            onClick={() => setShowWorkoutPicker(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
-          >
-            <Plus size={18} />
-          </button>
-          <button
-            onClick={() => setShowExerciseReorder(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
-            title={t('reorder_exercises')}
-          >
-            <GripVertical size={18} />
-          </button>
-        </div>
-
-        {/* Two-column on desktop, single-column on mobile */}
-        <div className="flex-1 min-h-0 flex flex-col md:flex-row md:gap-6">
-          {/* Left column: exercise card */}
-          <div className={`flex flex-col ${focusMode ? 'flex-1' : 'md:w-[55%] md:shrink-0'}`}>
-            <Card className={`border border-slate-700 bg-slate-800 relative overflow-hidden ${focusMode ? 'flex-1 flex flex-col justify-center px-5 py-6' : 'p-5 mb-4 md:mb-0'}`}>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-
-              {/* Exercise name + Zap + action buttons — always shown */}
-              <div className={`flex items-center justify-between gap-3 ${focusMode ? 'mb-4' : 'mb-5'}`}>
-                <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
-                  {getExName(selectedExercise)}
-                </h2>
-                <div className="flex gap-1.5 shrink-0">
-                  {/* Zap — always visible, aligned with exercise section */}
-                  <button
-                    onClick={() => setFocusMode(prev => !prev)}
-                    className={`p-2 rounded-full transition-all active:scale-95 flex items-center justify-center ${
-                      focusMode
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
-                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
-                    }`}
-                    title={t('focus_mode')}
-                  >
-                    <Zap size={20} />
-                  </button>
-                  {!focusMode && (
-                    <>
-                      <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
-                        className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
-                        title={t('watch_tutorial')}>
-                        <Youtube size={20} fill="currentColor" />
-                      </button>
-                      <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
-                        className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
-                        title={t('view_images')}>
-                        <Image size={20} />
-                      </button>
-                      <button onClick={() => setAnatomyExercise(selectedExercise)}
-                        className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
-                        title={t('view_anatomy')}>
-                        <Camera size={20} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Last set hint — focus mode only */}
-              {focusMode && (() => {
-                const logs = activeWorkout.logs[selectedExercise];
-                const lastSet = logs?.length ? logs[logs.length - 1] : null;
-                return lastSet ? (
-                  <p className="text-xs text-slate-500 text-center mb-4">
-                    {t('last_set')} {lastSet.weight}{isCardio ? '' : 'kg'} × {lastSet.reps}{isCardio ? 'min' : ''}
-                  </p>
-                ) : null;
-              })()}
-
-              <form onSubmit={handleAdd} className="flex items-end gap-3">
-                <div className="flex-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
-                    {isCardio ? t('level') : t('weight')} (kg)
-                  </label>
-                  <input
-                    type="number" inputMode="decimal"
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
-                    placeholder="0"
-                    value={weight} onChange={e => setWeight(e.target.value)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
-                    {isCardio ? t('time') : t('reps')}
-                  </label>
-                  <input
-                    type="number" inputMode="numeric"
-                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
-                    placeholder="0"
-                    value={reps} onChange={e => setReps(e.target.value)}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className={`flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50 ${
-                    focusMode ? 'h-24 w-24' : 'h-16 w-16'
-                  }`}
-                >
-                  <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
-                </button>
-              </form>
-            </Card>
-          </div>
-
-          {/* Right column: sets log + finish (hidden in focus mode) */}
-          {!focusMode && (
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex items-center justify-between px-2 mb-2">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
-                <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-                {((activeWorkout.logs[selectedExercise] || []).slice().reverse()).map((set, i, arr) => {
-                  const realIndex = arr.length - 1 - i;
-                  return (
-                    <div key={realIndex} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
-                      <div className="flex items-center gap-4">
-                        <span className="text-slate-500 font-mono text-sm">#{realIndex + 1}</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-black text-white">{set.weight}</span>
-                          <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
-                          <span className="text-xl font-black text-white">{set.reps}</span>
-                          <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => deleteSet(selectedExercise, realIndex)} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="pt-3 pb-2 shrink-0">
-                <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
-                  {t('finish_workout')}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {showExerciseReorder && (
-          <ExerciseReorderModal
-            exercises={routine.exercises}
-            getExName={getExName}
-            t={t}
-            onSave={(newOrder) => {
-              reorderRoutineExercises(activeWorkout.routineId, newOrder);
-              setShowExerciseReorder(false);
-            }}
-            onClose={() => setShowExerciseReorder(false)}
-          />
-        )}
-
-        {showWorkoutPicker && (
-          <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[75vh] flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b border-slate-800">
-                <h3 className="font-bold text-white">{t('add_exercise')}</h3>
-                <button onClick={() => { setShowWorkoutPicker(false); setWorkoutPickerMuscle('all'); setShowWorkoutPickerFilter(false); }}><X size={20} className="text-slate-400" /></button>
-              </div>
-              <div className="px-4 pt-3 pb-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
-                  <input
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-white outline-none text-sm"
-                    placeholder={t('search_placeholder')}
-                    value={workoutPickerSearch}
-                    onChange={e => setWorkoutPickerSearch(e.target.value)}
-                    autoFocus
-                  />
-                  <button
-                    onClick={() => setShowWorkoutPickerFilter(v => !v)}
-                    className={`absolute right-2 top-1.5 p-1.5 rounded-lg transition-colors ${
-                      showWorkoutPickerFilter || workoutPickerMuscle !== 'all'
-                        ? 'text-blue-400 bg-blue-500/20'
-                        : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    <ListFilter size={16} />
-                  </button>
-                </div>
-                {showWorkoutPickerFilter && (
-                  <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
-                    {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
-                      <button
-                        key={m}
-                        onClick={() => setWorkoutPickerMuscle(m)}
-                        className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                          workoutPickerMuscle === m
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
-                        }`}
-                      >
-                        {m === 'all' ? t('all') : (t('muscles')[m] || m)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
-                {allExercises
-                  .filter(ex => !routine.exercises.includes(ex.id))
-                  .filter(ex => {
-                    const name = t('ex_names')[ex.id] || ex.name;
-                    const muscle = t('muscles')[ex.muscle] || ex.muscle;
-                    const matchesSearch = !workoutPickerSearch ||
-                      name.toLowerCase().includes(workoutPickerSearch.toLowerCase()) ||
-                      muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
-                    const matchesMuscle = workoutPickerMuscle === 'all' || ex.muscle === workoutPickerMuscle;
-                    return matchesSearch && matchesMuscle;
-                  })
-                  .map(ex => (
-                    <div key={ex.id}
-                      onClick={() => addExerciseToWorkout(ex.id)}
-                      className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 cursor-pointer transition-all">
-                      <MuscleIcon muscle={ex.muscle} className="w-5 h-5 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-white text-sm">{getExName(ex.id)}</p>
-                        <p className="text-xs text-slate-500 uppercase font-bold">{getMuscleName(ex.muscle)}</p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-    );
-  };
 
   const HistoryView = () => (
     <div className="space-y-4 animate-in fade-in">
@@ -2444,6 +2474,10 @@ export default function App() {
       )}
     </div>
   );
+
+  const currentRoutineExercises = activeWorkout
+    ? (routines.find(r => r.id === activeWorkout.routineId)?.exercises ?? [])
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 pb-safe">
@@ -2489,7 +2523,39 @@ export default function App() {
                   />
                 : <Navigate to="/routines" replace />
             } />
-            <Route path="/workout" element={activeWorkout ? <ActiveWorkoutView /> : <Navigate to="/routines" replace />} />
+            <Route path="/workout" element={activeWorkout ? <ActiveWorkoutView
+              activeWorkout={activeWorkout}
+              routineExercises={currentRoutineExercises}
+              workoutSelectedExercise={workoutSelectedExercise}
+              focusMode={focusMode}
+              showExerciseReorder={showExerciseReorder}
+              showWorkoutPicker={showWorkoutPicker}
+              workoutPickerSearch={workoutPickerSearch}
+              workoutPickerMuscle={workoutPickerMuscle}
+              showWorkoutPickerFilter={showWorkoutPickerFilter}
+              history={history}
+              allExercises={allExercises}
+              setWorkoutSelectedExercise={setWorkoutSelectedExercise}
+              setFocusMode={setFocusMode}
+              setShowExerciseReorder={setShowExerciseReorder}
+              setShowWorkoutPicker={setShowWorkoutPicker}
+              setWorkoutPickerSearch={setWorkoutPickerSearch}
+              setWorkoutPickerMuscle={setWorkoutPickerMuscle}
+              setShowWorkoutPickerFilter={setShowWorkoutPickerFilter}
+              logSet={logSet}
+              deleteSet={deleteSet}
+              handleCancelWorkout={handleCancelWorkout}
+              handleFinishWorkout={handleFinishWorkout}
+              addExerciseToWorkout={addExerciseToWorkout}
+              reorderRoutineExercises={reorderRoutineExercises}
+              t={t}
+              getExName={getExName}
+              getExNameEn={getExNameEn}
+              getMuscleName={getMuscleName}
+              openVideoSearch={openVideoSearch}
+              openImageSearch={openImageSearch}
+              setAnatomyExercise={setAnatomyExercise}
+            /> : <Navigate to="/routines" replace />} />
             <Route path="/history" element={<HistoryView />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
