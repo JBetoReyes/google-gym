@@ -1674,6 +1674,152 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
   );
 });
 
+const tooltipStyle = { backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' };
+
+const ChartSlide = React.memo(function ChartSlide({ title, children }) {
+  return (
+    <div className="w-full shrink-0 snap-center">
+      <p className="text-xs font-bold text-slate-400 uppercase mb-2">{title}</p>
+      <div className="h-44">{children}</div>
+    </div>
+  );
+});
+
+const VolumeChart = React.memo(function VolumeChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+        <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+        <Tooltip contentStyle={tooltipStyle} />
+        <Line type="monotone" dataKey="volumen" stroke="#3b82f6" strokeWidth={3} dot={{r:3}} />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+});
+
+const DurationChart = React.memo(function DurationChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} barSize={12}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+        <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+        <Tooltip contentStyle={tooltipStyle} />
+        <Bar dataKey="duration" fill="#8b5cf6" radius={[4,4,0,0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+});
+
+const SetsChart = React.memo(function SetsChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} barSize={12}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+        <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+        <Tooltip contentStyle={tooltipStyle} />
+        <Bar dataKey="sets" fill="#10b981" radius={[4,4,0,0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+});
+
+const FreqChart = React.memo(function FreqChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={data} barSize={12}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+        <XAxis dataKey="week" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+        <Tooltip contentStyle={tooltipStyle} />
+        <Bar dataKey="count" fill="#f59e0b" radius={[4,4,0,0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+});
+
+const MuscleChart = React.memo(function MuscleChart({ data, setsLabel }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={65} innerRadius={35}>
+          {data.map((entry) => (
+            <Cell key={entry.id} fill={MUSCLE_COLORS[entry.id] || '#64748b'} />
+          ))}
+        </Pie>
+        <Tooltip contentStyle={tooltipStyle} formatter={(v, n) => [v + ' ' + setsLabel, n]} />
+        <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+});
+
+const CHART_LABELS_KEY = ['chart_volume', 'chart_duration', 'chart_sets', 'chart_freq', 'chart_muscle'];
+
+const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChartRange, t }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const labels = CHART_LABELS_KEY.map(k => t(k));
+  const setsLabel = t('chart_sets').toLowerCase();
+
+  const handleScroll = useCallback((e) => {
+    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth);
+    setActiveIndex(idx);
+  }, []);
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-bold text-lg text-white flex items-center gap-2">
+          <TrendingUp className="text-emerald-400" size={20}/> {t('progress')}
+        </h3>
+        <div className="flex gap-1">
+          {['1W','1M','6M','1Y'].map(r => (
+            <button key={r} onClick={() => setChartRange(r)}
+              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                chartRange === r ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
+              }`}>{r}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mobile: horizontal scroll-snap */}
+      <div className="relative md:hidden">
+        <div
+          className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar overscroll-x-contain"
+          style={{ touchAction: 'pan-x' }}
+          onScroll={handleScroll}
+        >
+          <ChartSlide title={t('chart_volume')}><VolumeChart data={stats.volumeData} /></ChartSlide>
+          <ChartSlide title={t('chart_duration')}><DurationChart data={stats.durationData} /></ChartSlide>
+          <ChartSlide title={t('chart_sets')}><SetsChart data={stats.setsData} /></ChartSlide>
+          <ChartSlide title={t('chart_freq')}><FreqChart data={stats.freqData} /></ChartSlide>
+          <ChartSlide title={t('chart_muscle')}><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></ChartSlide>
+        </div>
+        {/* Right-edge fade hint */}
+        <div className="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-slate-800 to-transparent pointer-events-none rounded-r-xl" />
+        {/* Scroll dot indicators */}
+        <div className="flex justify-center gap-1.5 mt-2">
+          {labels.map((label, i) => (
+            <div
+              key={i}
+              title={label}
+              className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === i ? 'w-4 bg-blue-400' : 'w-1.5 bg-slate-600'}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: 2-column grid */}
+      <div className="hidden md:grid md:grid-cols-2 gap-4">
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_volume')}</p><div className="h-40"><VolumeChart data={stats.volumeData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_duration')}</p><div className="h-40"><DurationChart data={stats.durationData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_sets')}</p><div className="h-40"><SetsChart data={stats.setsData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><FreqChart data={stats.freqData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-40"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
+      </div>
+    </Card>
+  );
+});
+
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'en');
   const t = (key) => TRANSLATIONS[lang][key] || key;
@@ -1760,7 +1906,6 @@ export default function App() {
   const [pendingImport, setPendingImport] = useState(null); // null | { name, exercises }
   const [showExerciseReorder, setShowExerciseReorder] = useState(false);
   const [chartRange, setChartRange] = useState('1M');
-  const [chartActiveIndex, setChartActiveIndex] = useState(0);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -2206,7 +2351,7 @@ export default function App() {
       {/* Stat cards — single horizontal scroll row with arrow controls */}
       <div className="relative">
         <button
-          onClick={() => statsScrollRef.current?.scrollBy({ left: -156, behavior: 'smooth' })}
+          onClick={() => statsScrollRef.current?.scrollBy({ left: -312, behavior: 'smooth' })}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-full p-1 shadow-lg"
           style={{ backdropFilter: 'blur(4px)' }}
         ><ChevronLeft size={14} /></button>
@@ -2255,148 +2400,13 @@ export default function App() {
           </Card>
         </div>
         <button
-          onClick={() => statsScrollRef.current?.scrollBy({ left: 156, behavior: 'smooth' })}
+          onClick={() => statsScrollRef.current?.scrollBy({ left: 312, behavior: 'smooth' })}
           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-full p-1 shadow-lg"
           style={{ backdropFilter: 'blur(4px)' }}
         ><ChevronRight size={14} /></button>
       </div>
 
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-lg text-white flex items-center gap-2">
-            <TrendingUp className="text-emerald-400" size={20}/> {t('progress')}
-          </h3>
-          <div className="flex gap-1">
-            {['1W','1M','6M','1Y'].map(r => (
-              <button key={r} onClick={() => setChartRange(r)}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                  chartRange === r ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-                }`}>{r}</button>
-            ))}
-          </div>
-        </div>
-
-        {(() => {
-          const ChartSlide = ({ title, children }) => (
-            <div className="w-full shrink-0 snap-center">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-2">{title}</p>
-              <div className="h-44">{children}</div>
-            </div>
-          );
-
-          const tooltipStyle = { backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' };
-
-          const VolumeChart = () => (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.volumeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="volumen" stroke="#3b82f6" strokeWidth={3} dot={{r:3}} />
-              </LineChart>
-            </ResponsiveContainer>
-          );
-
-          const DurationChart = () => (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.durationData} barSize={12}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="duration" fill="#8b5cf6" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          );
-
-          const SetsChart = () => (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.setsData} barSize={12}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="sets" fill="#10b981" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          );
-
-          const FreqChart = () => (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.freqData} barSize={12}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="week" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill="#f59e0b" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          );
-
-          const MuscleChart = () => (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={stats.muscleData} dataKey="value"
-                     cx="50%" cy="50%" outerRadius={65} innerRadius={35}>
-                  {stats.muscleData.map((entry) => (
-                    <Cell key={entry.id} fill={MUSCLE_COLORS[entry.id] || '#64748b'} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle}
-                         formatter={(v, n) => [v + ' ' + t('chart_sets').toLowerCase(), n]} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          );
-
-          return (
-            <>
-              {/* Mobile: horizontal scroll-snap */}
-              <div className="relative md:hidden">
-                <div
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar overscroll-x-contain"
-                  style={{ touchAction: 'pan-x' }}
-                  onScroll={(e) => {
-                    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth);
-                    setChartActiveIndex(idx);
-                  }}
-                >
-                  <ChartSlide title={t('chart_volume')}><VolumeChart /></ChartSlide>
-                  <ChartSlide title={t('chart_duration')}><DurationChart /></ChartSlide>
-                  <ChartSlide title={t('chart_sets')}><SetsChart /></ChartSlide>
-                  <ChartSlide title={t('chart_freq')}><FreqChart /></ChartSlide>
-                  <ChartSlide title={t('chart_muscle')}><MuscleChart /></ChartSlide>
-                </div>
-                {/* Right-edge fade hint */}
-                <div className="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-slate-800 to-transparent pointer-events-none rounded-r-xl" />
-                {/* Scroll dot indicators */}
-                <div className="flex justify-center gap-1.5 mt-2">
-                  {[t('chart_volume'), t('chart_duration'), t('chart_sets'), t('chart_freq'), t('chart_muscle')].map((label, i) => (
-                    <div
-                      key={i}
-                      title={label}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${chartActiveIndex === i ? 'w-4 bg-blue-400' : 'w-1.5 bg-slate-600'}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Desktop: 2-column grid */}
-              <div className="hidden md:grid md:grid-cols-2 gap-4">
-                {[
-                  { title: t('chart_volume'), C: VolumeChart },
-                  { title: t('chart_duration'), C: DurationChart },
-                  { title: t('chart_sets'), C: SetsChart },
-                  { title: t('chart_freq'), C: FreqChart },
-                  { title: t('chart_muscle'), C: MuscleChart },
-                ].map(({ title, C }) => (
-                  <div key={title}>
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-2">{title}</p>
-                    <div className="h-40"><C /></div>
-                  </div>
-                ))}
-              </div>
-            </>
-          );
-        })()}
-      </Card>
+      <ChartSlider stats={stats} chartRange={chartRange} setChartRange={setChartRange} t={t} />
     </div>
   );
 
