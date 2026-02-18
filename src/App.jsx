@@ -1934,7 +1934,7 @@ export default function App() {
       });
     });
     const muscleData = Object.entries(muscleCount)
-      .map(([key, value]) => ({ name: key, label: TRANSLATIONS[lang]?.muscles?.[key] || key, value }))
+      .map(([key, value]) => ({ name: TRANSLATIONS[lang]?.muscles?.[key] || key, id: key, value }))
       .sort((a, b) => b.value - a.value);
 
     // All-time stats
@@ -2205,28 +2205,28 @@ export default function App() {
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Activity size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('total_workouts')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_workouts')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalWorkouts}</p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Dumbbell size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('total_sets')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_sets')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalSets}</p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Clock size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('avg_duration')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('avg_duration')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">{t('min_label')}</span></p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Clock size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('total_time')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('total_time')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.totalHoursStr}</p>
         </Card>
@@ -2236,14 +2236,14 @@ export default function App() {
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Trophy size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('streak')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('streak')}</span>
           </div>
           <p className="text-3xl font-black text-white">{stats.streak}<span className="text-sm text-slate-400 ml-1">{t('weeks_label')}</span></p>
         </Card>
         <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
           <div className="flex items-center gap-2 mb-2 text-slate-400 min-w-0">
             <Dumbbell size={18} className="shrink-0" />
-            <span className="text-xs font-bold uppercase truncate">{t('fav_exercise')}</span>
+            <span className="text-xs font-bold uppercase truncate min-w-0">{t('fav_exercise')}</span>
           </div>
           <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
         </Card>
@@ -2321,10 +2321,10 @@ export default function App() {
           const MuscleChart = () => (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={stats.muscleData} dataKey="value" nameKey="label"
+                <Pie data={stats.muscleData} dataKey="value"
                      cx="50%" cy="50%" outerRadius={65} innerRadius={35}>
                   {stats.muscleData.map((entry) => (
-                    <Cell key={entry.name} fill={MUSCLE_COLORS[entry.name] || '#64748b'} />
+                    <Cell key={entry.id} fill={MUSCLE_COLORS[entry.id] || '#64748b'} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle}
