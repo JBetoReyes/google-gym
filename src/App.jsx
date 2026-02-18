@@ -86,6 +86,10 @@ const TRANSLATIONS = {
     watch_tutorial: 'Ver tutorial',
     view_images: 'Ver diagrama',
     view_anatomy: 'Ver anatomía',
+    create_exercise: 'Crear ejercicio',
+    new_exercise: 'Nuevo ejercicio',
+    exercise_name_placeholder: 'Nombre del ejercicio',
+    add: 'Agregar',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -233,6 +237,10 @@ const TRANSLATIONS = {
     watch_tutorial: 'Watch tutorial',
     view_images: 'View diagram',
     view_anatomy: 'View anatomy',
+    create_exercise: 'Create exercise',
+    new_exercise: 'New exercise',
+    exercise_name_placeholder: 'Exercise name',
+    add: 'Add',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -380,6 +388,10 @@ const TRANSLATIONS = {
     watch_tutorial: 'Voir le tutoriel',
     view_images: 'Voir diagramme',
     view_anatomy: 'Voir anatomie',
+    create_exercise: 'Créer exercice',
+    new_exercise: 'Nouvel exercice',
+    exercise_name_placeholder: 'Nom de l\'exercice',
+    add: 'Ajouter',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -927,14 +939,14 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold px-1 py-1 transition-colors"
           >
-            <Plus size={16} /> Crear ejercicio
+            <Plus size={16} /> {t('create_exercise')}
           </button>
         ) : (
           <div className="bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-bold text-blue-400">Nuevo ejercicio</p>
+            <p className="text-sm font-bold text-blue-400">{t('new_exercise')}</p>
             <input
               className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Nombre del ejercicio"
+              placeholder={t('exercise_name_placeholder')}
               value={customName}
               onChange={e => setCustomName(e.target.value)}
               autoFocus
@@ -954,7 +966,7 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
                 disabled={!customName.trim()}
                 className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
               >
-                Agregar
+                {t('add')}
               </button>
               <button
                 onClick={() => { setShowAddForm(false); setCustomName(''); }}
