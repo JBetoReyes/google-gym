@@ -121,6 +121,7 @@ const TRANSLATIONS = {
     last_set: 'Último:',
     share_routine: 'Compartir',
     scan_qr: 'Escanear QR',
+    import: 'Importar',
     routine_qr_title: 'Código QR',
     import_routine: 'Importar Rutina',
     import_confirm: '¿Agregar esta rutina a tu lista?',
@@ -134,6 +135,19 @@ const TRANSLATIONS = {
     tab_exercises: 'Ejercicios',
     no_exercises_selected: 'Sin ejercicios seleccionados',
     camera_error: 'No se pudo acceder a la cámara',
+    import_success: 'Datos importados correctamente',
+    import_error: 'Error al importar archivo',
+    rest_timer: 'Descanso',
+    skip: 'Saltar',
+    rest_done: '¡Descanso listo!',
+    new_pr: '¡Nuevo Récord!',
+    my_exercises: 'Mis Ejercicios',
+    no_custom_exercises: 'No tienes ejercicios personalizados',
+    delete_exercise_warn: 'Se eliminará de las rutinas que lo usen.',
+    no_routines: 'Sin rutinas aún',
+    no_routines_hint: 'Crea tu primera rutina para empezar.',
+    rest_timer_default: 'Descanso por defecto',
+    set_deleted: 'Serie eliminada',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -292,6 +306,7 @@ const TRANSLATIONS = {
     last_set: 'Last:',
     share_routine: 'Share',
     scan_qr: 'Scan QR',
+    import: 'Import',
     routine_qr_title: 'QR Code',
     import_routine: 'Import Routine',
     import_confirm: 'Add this routine to your list?',
@@ -305,6 +320,19 @@ const TRANSLATIONS = {
     tab_exercises: 'Exercises',
     no_exercises_selected: 'No exercises selected',
     camera_error: 'Could not access camera',
+    import_success: 'Data imported successfully',
+    import_error: 'Error importing file',
+    rest_timer: 'Rest Timer',
+    skip: 'Skip',
+    rest_done: 'Rest done!',
+    new_pr: 'New PR!',
+    my_exercises: 'My Exercises',
+    no_custom_exercises: 'No custom exercises yet',
+    delete_exercise_warn: 'This will be removed from routines using it.',
+    no_routines: 'No routines yet',
+    no_routines_hint: 'Create your first routine to get started.',
+    rest_timer_default: 'Default Rest Timer',
+    set_deleted: 'Set deleted',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -463,6 +491,7 @@ const TRANSLATIONS = {
     last_set: 'Dernier:',
     share_routine: 'Partager',
     scan_qr: 'Scanner QR',
+    import: 'Importer',
     routine_qr_title: 'Code QR',
     import_routine: 'Importer Routine',
     import_confirm: 'Ajouter cette routine?',
@@ -476,6 +505,19 @@ const TRANSLATIONS = {
     tab_exercises: 'Exercices',
     no_exercises_selected: 'Aucun exercice sélectionné',
     camera_error: 'Caméra inaccessible',
+    import_success: 'Données importées avec succès',
+    import_error: "Erreur lors de l'importation",
+    rest_timer: 'Repos',
+    skip: 'Passer',
+    rest_done: 'Repos terminé !',
+    new_pr: 'Nouveau Record !',
+    my_exercises: 'Mes Exercices',
+    no_custom_exercises: 'Aucun exercice personnalisé',
+    delete_exercise_warn: "Il sera supprimé des routines qui l'utilisent.",
+    no_routines: 'Aucune routine',
+    no_routines_hint: 'Créez votre première routine pour commencer.',
+    rest_timer_default: 'Minuteur de repos par défaut',
+    set_deleted: 'Série supprimée',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -1072,20 +1114,110 @@ function QRScannerModal({ t, onScan, onClose }) {
   );
 }
 
+function WorkoutPickerModal({
+  routineExercises, allExercises,
+  workoutPickerSearch, workoutPickerMuscle, showWorkoutPickerFilter,
+  setWorkoutPickerSearch, setWorkoutPickerMuscle, setShowWorkoutPickerFilter,
+  addExerciseToWorkout, onClose,
+  t, getExName, getMuscleName,
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in px-5">
+      <div className="bg-slate-900 rounded-2xl w-full max-w-md max-h-[75vh] flex flex-col animate-in zoom-in-95">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-800 shrink-0">
+          <h3 className="font-bold text-white">{t('add_exercise')}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-800 transition-colors">
+            <X size={18} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Search + filter */}
+        <div className="px-4 pt-3 pb-2 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+            <input
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-white outline-none text-sm"
+              placeholder={t('search_placeholder')}
+              value={workoutPickerSearch}
+              onChange={e => setWorkoutPickerSearch(e.target.value)}
+              autoFocus
+            />
+            <button
+              onClick={() => setShowWorkoutPickerFilter(v => !v)}
+              className={`absolute right-2 top-1.5 p-1.5 rounded-lg transition-colors ${
+                showWorkoutPickerFilter || workoutPickerMuscle !== 'all'
+                  ? 'text-blue-400 bg-blue-500/20'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <ListFilter size={16} />
+            </button>
+          </div>
+          {showWorkoutPickerFilter && (
+            <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
+              {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+                <button
+                  key={m}
+                  onClick={() => setWorkoutPickerMuscle(m)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                    workoutPickerMuscle === m
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
+                  }`}
+                >
+                  {m === 'all' ? t('all') : (t('muscles')[m] || m)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Exercise list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-5 space-y-2 min-h-0">
+          {allExercises
+            .filter(ex => !routineExercises.includes(ex.id))
+            .filter(ex => {
+              const name = t('ex_names')[ex.id] || ex.name;
+              const muscle = t('muscles')[ex.muscle] || ex.muscle;
+              const matchesSearch = !workoutPickerSearch ||
+                name.toLowerCase().includes(workoutPickerSearch.toLowerCase()) ||
+                muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
+              const matchesMuscle = workoutPickerMuscle === 'all' || ex.muscle === workoutPickerMuscle;
+              return matchesSearch && matchesMuscle;
+            })
+            .map(ex => (
+              <div key={ex.id}
+                onClick={() => addExerciseToWorkout(ex.id)}
+                className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 cursor-pointer transition-all">
+                <MuscleIcon muscle={ex.muscle} className="w-5 h-5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-white text-sm">{getExName(ex.id)}</p>
+                  <p className="text-xs text-slate-500 uppercase font-bold">{getMuscleName(ex.muscle)}</p>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
   const [order, setOrder] = useState(exercises);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   return createPortal(
-    <div className="fixed inset-0 z-[200] flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 rounded-t-2xl flex flex-col max-h-[75vh]">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in px-5">
+      <div className="bg-slate-900 rounded-2xl flex flex-col w-full max-w-md max-h-[75vh] animate-in zoom-in-95">
 
-        {/* Compact single-row header: pill + title + X */}
-        <div className="flex items-center gap-3 px-5 pt-3 pb-2.5 border-b border-slate-800 shrink-0">
-          <div className="w-6 h-1 rounded-full bg-slate-600 shrink-0" />
-          <span className="flex-1 font-bold text-white text-sm">{t('reorder_exercises')}</span>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-800 transition-colors shrink-0">
-            <X size={16} className="text-slate-400" />
+        {/* Header: title + X */}
+        <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-slate-800 shrink-0">
+          <span className="flex-1 font-bold text-white">{t('reorder_exercises')}</span>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-800 transition-colors shrink-0">
+            <X size={18} className="text-slate-400" />
           </button>
         </div>
 
@@ -1105,7 +1237,7 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
         </DndContext>
 
         {/* Footer pinned at bottom of panel */}
-        <div className="px-4 pt-2.5 pb-8 border-t border-slate-800 shrink-0 flex gap-3">
+        <div className="px-5 pt-3 pb-5 border-t border-slate-800 shrink-0 flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-all active:scale-[0.98]"
@@ -1386,9 +1518,9 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
 };
 
 // --- Module-level SetLogItem (stable reference, no remount on App re-render) ---
-const SetLogItem = React.memo(function SetLogItem({ index, weight, reps, isCardio, onDelete }) {
+const SetLogItem = React.memo(function SetLogItem({ index, weight, reps, isCardio, isPR, onDelete }) {
   return (
-    <div className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
+    <div className={`flex items-center justify-between p-4 rounded-xl border animate-in slide-in-from-top-2 ${isPR ? 'bg-yellow-500/5 border-yellow-500/20' : 'bg-slate-800/50 border-slate-800'}`}>
       <div className="flex items-center gap-4">
         <span className="text-slate-500 font-mono text-sm">#{index}</span>
         <div className="flex items-baseline gap-1">
@@ -1397,6 +1529,7 @@ const SetLogItem = React.memo(function SetLogItem({ index, weight, reps, isCardi
           <span className="text-xl font-black text-white">{reps}</span>
           <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
         </div>
+        {isPR && <Trophy size={14} className="text-yellow-400" />}
       </div>
       <button onClick={onDelete} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
     </div>
@@ -1415,6 +1548,7 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
   setWorkoutPickerSearch, setWorkoutPickerMuscle, setShowWorkoutPickerFilter,
   logSet, deleteSet, handleCancelWorkout, handleFinishWorkout,
   addExerciseToWorkout, reorderRoutineExercises,
+  checkPR, restTimerDefault,
   t, getExName, getExNameEn, getMuscleName,
   openVideoSearch, openImageSearch, setAnatomyExercise,
 }) {
@@ -1423,6 +1557,51 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
   const pillContainerRef = useRef(null);
+
+  // PR flash
+  const [prFlash, setPrFlash] = useState(false);
+
+  // Rest timer
+  const [restSeconds, setRestSeconds] = useState(null);
+  const restRef = useRef(null);
+  const restTotalRef = useRef(null);
+
+  // Pending delete (undo toast)
+  const [pendingDelete, setPendingDelete] = useState(null); // { exId, index, timer }
+
+  const clearTimer = useCallback(() => {
+    if (restRef.current) clearInterval(restRef.current);
+    setRestSeconds(null);
+  }, []);
+
+  const startRestTimer = useCallback((seconds) => {
+    clearTimer();
+    restTotalRef.current = seconds;
+    setRestSeconds(seconds);
+    restRef.current = setInterval(() => {
+      setRestSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(restRef.current);
+          navigator.vibrate?.(300);
+          // Short beep via Web Audio
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            osc.start(); osc.stop(ctx.currentTime + 0.5);
+          } catch {}
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [clearTimer]);
+
+  useEffect(() => () => { if (restRef.current) clearInterval(restRef.current); }, []);
 
   useEffect(() => {
     if (pillContainerRef.current) {
@@ -1450,15 +1629,47 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
     }
   }, [selectedExercise]);
 
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if(!weight || !reps) return;
-    logSet(selectedExercise, weight, reps);
-  };
-
   let exInfo = allExercises.find(e => e.id === selectedExercise);
   if (!exInfo) exInfo = allExercises.find(e => e.name === selectedExercise);
   const isCardio = exInfo?.muscle === 'Cardio';
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if(!weight || !reps) return;
+    const isPR = !isCardio && checkPR(selectedExercise, weight);
+    logSet(selectedExercise, weight, reps, isPR);
+    if (isPR) {
+      setPrFlash(true);
+      setTimeout(() => setPrFlash(false), 2500);
+    }
+    // Start rest timer
+    startRestTimer(isCardio ? 60 : restTimerDefault);
+  };
+
+  const handleDeleteSet = useCallback((exId, index) => {
+    // Cancel any existing pending delete for same exercise
+    setPendingDelete(prev => {
+      if (prev) {
+        clearTimeout(prev.timer);
+        // If prev was for a different slot, actually delete it now
+        if (prev.exId !== exId || prev.index !== index) {
+          deleteSet(prev.exId, prev.index);
+        }
+      }
+      const timer = setTimeout(() => {
+        deleteSet(exId, index);
+        setPendingDelete(null);
+      }, 3000);
+      return { exId, index, timer };
+    });
+  }, [deleteSet]);
+
+  const handleUndoDelete = useCallback(() => {
+    setPendingDelete(prev => {
+      if (prev) clearTimeout(prev.timer);
+      return null;
+    });
+  }, []);
 
   const reversedLogs = useMemo(
     () => (activeWorkout.logs[selectedExercise] || []).slice().reverse(),
@@ -1564,6 +1775,12 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
               ) : null;
             })()}
 
+            {prFlash && (
+              <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-2 text-yellow-400 font-bold mb-3 animate-in slide-in-from-top-2">
+                <Trophy size={16} /> {t('new_pr')}
+              </div>
+            )}
+
             <form onSubmit={handleAdd} className="flex items-end gap-3">
               <div className="flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
@@ -1596,6 +1813,24 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
                 <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
               </button>
             </form>
+
+            {restSeconds !== null && (
+              <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mt-3 animate-in slide-in-from-top-2">
+                <div className="flex items-center gap-2 text-blue-400 font-mono font-bold text-lg">
+                  <Clock size={18} />
+                  {Math.floor(restSeconds / 60)}:{String(restSeconds % 60).padStart(2, '0')}
+                </div>
+                <div className="flex-1 mx-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                    style={{ width: `${(restSeconds / (restTotalRef.current || restTimerDefault)) * 100}%` }}
+                  />
+                </div>
+                <button onClick={clearTimer} className="text-slate-500 hover:text-white text-xs font-bold px-2 py-1 rounded-lg hover:bg-slate-700 transition-colors">
+                  {t('skip')}
+                </button>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -1606,18 +1841,29 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
               <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
             </div>
+
+            {pendingDelete && (
+              <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 mb-2 animate-in slide-in-from-top-2">
+                <span className="text-sm text-slate-400">{t('set_deleted')}</span>
+                <button onClick={handleUndoDelete} className="text-blue-400 font-bold text-sm hover:text-blue-300 transition-colors">Undo</button>
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
               {reversedLogs.map((set, i, arr) => {
                 const realIndex = arr.length - 1 - i;
+                const isPending = pendingDelete?.exId === selectedExercise && pendingDelete?.index === realIndex;
                 return (
-                  <SetLogItem
-                    key={realIndex}
-                    index={realIndex + 1}
-                    weight={set.weight}
-                    reps={set.reps}
-                    isCardio={isCardio}
-                    onDelete={() => deleteSet(selectedExercise, realIndex)}
-                  />
+                  <div key={realIndex} className={`transition-opacity ${isPending ? 'opacity-40' : ''}`}>
+                    <SetLogItem
+                      index={realIndex + 1}
+                      weight={set.weight}
+                      reps={set.reps}
+                      isCardio={isCardio}
+                      isPR={set.isPR}
+                      onDelete={() => handleDeleteSet(selectedExercise, realIndex)}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -1644,77 +1890,21 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
       )}
 
       {showWorkoutPicker && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[75vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800">
-              <h3 className="font-bold text-white">{t('add_exercise')}</h3>
-              <button onClick={() => { setShowWorkoutPicker(false); setWorkoutPickerMuscle('all'); setShowWorkoutPickerFilter(false); }}><X size={20} className="text-slate-400" /></button>
-            </div>
-            <div className="px-4 pt-3 pb-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
-                <input
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-white outline-none text-sm"
-                  placeholder={t('search_placeholder')}
-                  value={workoutPickerSearch}
-                  onChange={e => setWorkoutPickerSearch(e.target.value)}
-                  autoFocus
-                />
-                <button
-                  onClick={() => setShowWorkoutPickerFilter(v => !v)}
-                  className={`absolute right-2 top-1.5 p-1.5 rounded-lg transition-colors ${
-                    showWorkoutPickerFilter || workoutPickerMuscle !== 'all'
-                      ? 'text-blue-400 bg-blue-500/20'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  <ListFilter size={16} />
-                </button>
-              </div>
-              {showWorkoutPickerFilter && (
-                <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
-                  {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
-                    <button
-                      key={m}
-                      onClick={() => setWorkoutPickerMuscle(m)}
-                      className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                        workoutPickerMuscle === m
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
-                      }`}
-                    >
-                      {m === 'all' ? t('all') : (t('muscles')[m] || m)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
-              {allExercises
-                .filter(ex => !routineExercises.includes(ex.id))
-                .filter(ex => {
-                  const name = t('ex_names')[ex.id] || ex.name;
-                  const muscle = t('muscles')[ex.muscle] || ex.muscle;
-                  const matchesSearch = !workoutPickerSearch ||
-                    name.toLowerCase().includes(workoutPickerSearch.toLowerCase()) ||
-                    muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
-                  const matchesMuscle = workoutPickerMuscle === 'all' || ex.muscle === workoutPickerMuscle;
-                  return matchesSearch && matchesMuscle;
-                })
-                .map(ex => (
-                  <div key={ex.id}
-                    onClick={() => addExerciseToWorkout(ex.id)}
-                    className="flex items-center gap-3 p-3 bg-slate-800 rounded-xl border border-slate-700 hover:border-slate-500 cursor-pointer transition-all">
-                    <MuscleIcon muscle={ex.muscle} className="w-5 h-5 shrink-0" />
-                    <div>
-                      <p className="font-semibold text-white text-sm">{getExName(ex.id)}</p>
-                      <p className="text-xs text-slate-500 uppercase font-bold">{getMuscleName(ex.muscle)}</p>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
+        <WorkoutPickerModal
+          routineExercises={routineExercises}
+          allExercises={allExercises}
+          workoutPickerSearch={workoutPickerSearch}
+          workoutPickerMuscle={workoutPickerMuscle}
+          showWorkoutPickerFilter={showWorkoutPickerFilter}
+          setWorkoutPickerSearch={setWorkoutPickerSearch}
+          setWorkoutPickerMuscle={setWorkoutPickerMuscle}
+          setShowWorkoutPickerFilter={setShowWorkoutPickerFilter}
+          addExerciseToWorkout={addExerciseToWorkout}
+          onClose={() => { setShowWorkoutPicker(false); setWorkoutPickerMuscle('all'); setShowWorkoutPickerFilter(false); }}
+          t={t}
+          getExName={getExName}
+          getMuscleName={getMuscleName}
+        />
       )}
 
     </div>
@@ -1873,11 +2063,11 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
         </div>
       </div>
 
-      {/* Mobile: horizontal scroll-snap */}
-      <div className="relative md:hidden">
+      {/* Mobile/tablet: horizontal scroll-snap */}
+      <div className="relative lg:hidden">
         <div
           className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar overscroll-x-contain"
-          style={{ touchAction: 'pan-x' }}
+          style={{ touchAction: 'pan-x pan-y' }}
           onScroll={handleScroll}
         >
           <ChartSlide title={t('chart_freq')}><GoalRingChart sessionsThisWeek={stats.uniqueDaysCount} weeklyGoal={weeklyGoal} t={t} /></ChartSlide>
@@ -1900,13 +2090,13 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
         </div>
       </div>
 
-      {/* Desktop: 2-column grid */}
-      <div className="hidden md:grid md:grid-cols-2 gap-4">
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><GoalRingChart sessionsThisWeek={stats.uniqueDaysCount} weeklyGoal={weeklyGoal} t={t} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-40"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_volume')}</p><div className="h-40"><VolumeChart data={stats.volumeData} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_duration')}</p><div className="h-40"><DurationChart data={stats.durationData} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_sets')}</p><div className="h-40"><SetsChart data={stats.setsData} /></div></div>
+      {/* Desktop: 3-column grid */}
+      <div className="hidden lg:grid lg:grid-cols-3 gap-4">
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_volume')}</p><div className="h-52"><VolumeChart data={stats.volumeData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_duration')}</p><div className="h-52"><DurationChart data={stats.durationData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_sets')}</p><div className="h-52"><SetsChart data={stats.setsData} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-52"><GoalRingChart sessionsThisWeek={stats.uniqueDaysCount} weeklyGoal={weeklyGoal} t={t} /></div></div>
+        <div className="lg:col-span-2"><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-52"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
       </div>
     </Card>
   );
@@ -1984,6 +2174,11 @@ export default function App() {
     catch { return []; }
   });
 
+  const [restTimerDefault, setRestTimerDefault] = useState(() => {
+    const saved = localStorage.getItem('gym_rest_timer');
+    return saved ? parseInt(saved) : 90;
+  });
+
   // ActiveWorkoutView state lifted to avoid remount when App re-renders
   const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
@@ -2017,6 +2212,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gym_weekly_goal', weeklyGoal.toString()); }, [weeklyGoal]);
   useEffect(() => { localStorage.setItem('gym_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('gym_custom_exercises', JSON.stringify(customExercises)); }, [customExercises]);
+  useEffect(() => { localStorage.setItem('gym_rest_timer', restTimerDefault.toString()); }, [restTimerDefault]);
   useEffect(() => {
     if (activeWorkout) {
       localStorage.setItem('gym_active_workout', JSON.stringify(activeWorkout));
@@ -2056,8 +2252,10 @@ export default function App() {
   }, [activeWorkout]);
 
   // --- Import/Export ---
+  const [importFeedback, setImportFeedback] = useState(null); // null | 'success' | 'error'
+
   const handleExport = () => {
-    const dataStr = JSON.stringify({ routines, history, weeklyGoal });
+    const dataStr = JSON.stringify({ routines, history, weeklyGoal, customExercises });
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = 'gymtracker_backup.json';
     const linkElement = document.createElement('a');
@@ -2072,17 +2270,20 @@ export default function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target.result);
-        if (data.routines) setRoutines(data.routines);
-        if (data.history) setHistory(data.history);
-        if (data.weeklyGoal) setWeeklyGoal(data.weeklyGoal);
-        setShowSettings(false);
-        alert('Datos importados correctamente.');
+        const parsed = JSON.parse(e.target.result);
+        if (parsed.routines) setRoutines(parsed.routines);
+        if (parsed.history) setHistory(parsed.history);
+        if (parsed.weeklyGoal) setWeeklyGoal(parsed.weeklyGoal);
+        if (parsed.customExercises) setCustomExercises(parsed.customExercises);
+        setImportFeedback('success');
+        setTimeout(() => setImportFeedback(null), 3000);
       } catch (err) {
-        alert('Error al importar archivo.');
+        setImportFeedback('error');
+        setTimeout(() => setImportFeedback(null), 3000);
       }
     };
     reader.readAsText(file);
+    event.target.value = '';
   };
 
   const allExercises = useMemo(
@@ -2263,10 +2464,17 @@ export default function App() {
     });
   };
 
-  const logSet = useCallback((exerciseId, weight, reps) => {
+  const checkPR = useCallback((exerciseId, weight) => {
+    const prevBest = history
+      .flatMap(s => s.logs[exerciseId] || [])
+      .reduce((max, s) => Math.max(max, parseFloat(s.weight) || 0), 0);
+    return parseFloat(weight) > prevBest && parseFloat(weight) > 0;
+  }, [history]);
+
+  const logSet = useCallback((exerciseId, weight, reps, isPR) => {
     setActiveWorkout(prev => ({
       ...prev,
-      logs: { ...prev.logs, [exerciseId]: [...(prev.logs[exerciseId] || []), { weight, reps }] }
+      logs: { ...prev.logs, [exerciseId]: [...(prev.logs[exerciseId] || []), { weight, reps, ...(isPR ? { isPR: true } : {}) }] }
     }));
   }, []);
 
@@ -2309,24 +2517,53 @@ export default function App() {
     ]);
   };
 
+  const editCustomExercise = useCallback((id, name, muscle) => {
+    setCustomExercises(prev => prev.map(ex => ex.id === id ? { ...ex, name, muscle } : ex));
+  }, []);
+
+  const deleteCustomExercise = useCallback((id) => {
+    setCustomExercises(prev => prev.filter(ex => ex.id !== id));
+    setRoutines(prev => prev.map(r => ({ ...r, exercises: r.exercises.filter(e => e !== id) })));
+  }, []);
+
   const addExerciseToWorkout = useCallback((exId) => {
-    const routineId = activeWorkoutRef.current?.routineId;
-    setRoutines(prev => prev.map(r =>
-      r.id === routineId ? { ...r, exercises: [...r.exercises, exId] } : r
-    ));
+    setActiveWorkout(prev => ({
+      ...prev,
+      extraExercises: [...(prev.extraExercises || []), exId],
+    }));
     setWorkoutSelectedExercise(exId);
     setShowWorkoutPicker(false);
     setWorkoutPickerSearch('');
   }, []);
 
   // --- Settings Modal ---
-  const SettingsModal = () => (
+  const SettingsModal = () => {
+    const [showCustomExercises, setShowCustomExercises] = useState(false);
+    const [editingExId, setEditingExId] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editMuscle, setEditMuscle] = useState('Pecho');
+    const [deleteExConfirm, setDeleteExConfirm] = useState(null);
+
+    return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
-      <Card className="w-full max-w-md p-6 bg-slate-900 border border-slate-700 relative">
+      <Card className="w-full max-w-md bg-slate-900 border border-slate-700 relative overflow-y-auto max-h-[90vh]">
+        <div className="p-6">
         <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X /></button>
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Settings className="text-blue-400" /> {t('settings')}
         </h2>
+
+        {/* Import feedback banner */}
+        {importFeedback && (
+          <div className={`mb-4 flex items-center gap-2 p-3 rounded-xl text-sm font-semibold animate-in slide-in-from-top-2 ${
+            importFeedback === 'success'
+              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+          }`}>
+            {importFeedback === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+            {t(importFeedback === 'success' ? 'import_success' : 'import_error')}
+          </div>
+        )}
 
         {/* Idioma */}
         <div className="mb-6">
@@ -2337,7 +2574,7 @@ export default function App() {
               { code: 'en', label: 'English', flag: '🇺🇸' },
               { code: 'fr', label: 'Français', flag: '🇫🇷' }
             ].map(l => (
-              <button 
+              <button
                 key={l.code}
                 onClick={() => setLang(l.code)}
                 className={`p-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${lang === l.code ? 'bg-blue-600 border-blue-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}
@@ -2349,6 +2586,92 @@ export default function App() {
           </div>
         </div>
 
+        {/* Rest Timer Default */}
+        <div className="mb-6">
+          <label className="text-sm font-bold text-slate-400 uppercase mb-3 block">{t('rest_timer_default')}</label>
+          <div className="flex gap-2">
+            {[60, 90, 120, 180].map(s => (
+              <button
+                key={s}
+                onClick={() => setRestTimerDefault(s)}
+                className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all ${
+                  restTimerDefault === s
+                    ? 'bg-blue-600 border-blue-400 text-white'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                {s}s
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* My Exercises */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowCustomExercises(v => !v)}
+            className="flex items-center justify-between w-full text-sm font-bold text-slate-400 uppercase mb-3"
+          >
+            <span>{t('my_exercises')} ({customExercises.length})</span>
+            <ChevronRight size={16} className={`transition-transform ${showCustomExercises ? 'rotate-90' : ''}`} />
+          </button>
+          {showCustomExercises && (
+            <div className="space-y-2 animate-in slide-in-from-top-2">
+              {customExercises.length === 0 ? (
+                <p className="text-slate-600 text-sm py-2 text-center">{t('no_custom_exercises')}</p>
+              ) : (
+                customExercises.map(ex => (
+                  <div key={ex.id} className="bg-slate-800 rounded-xl border border-slate-700">
+                    {editingExId === ex.id ? (
+                      <div className="p-3 space-y-2">
+                        <input
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                        />
+                        <select
+                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none"
+                          value={editMuscle}
+                          onChange={e => setEditMuscle(e.target.value)}
+                        >
+                          {['Cardio','Pecho','Espalda','Pierna','Hombro','Brazos','Abs'].map(m => (
+                            <option key={m} value={m}>{t('muscles')[m] || m}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { editCustomExercise(ex.id, editName.trim(), editMuscle); setEditingExId(null); }}
+                            disabled={!editName.trim()}
+                            className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-semibold py-1.5 rounded-lg text-sm"
+                          >{t('save_routine')}</button>
+                          <button
+                            onClick={() => setEditingExId(null)}
+                            className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-1.5 rounded-lg text-sm"
+                          >{t('cancel')}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <MuscleIcon muscle={ex.muscle} className="w-4 h-4 shrink-0" />
+                        <span className="flex-1 text-white text-sm font-semibold truncate">{ex.name}</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase mr-1">{t('muscles')[ex.muscle] || ex.muscle}</span>
+                        <button
+                          onClick={() => { setEditingExId(ex.id); setEditName(ex.name); setEditMuscle(ex.muscle); }}
+                          className="p-1.5 text-slate-500 hover:text-blue-400 rounded-lg hover:bg-slate-700 transition-colors"
+                        ><Pencil size={14} /></button>
+                        <button
+                          onClick={() => setDeleteExConfirm(ex.id)}
+                          className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-slate-700 transition-colors"
+                        ><Trash2 size={14} /></button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Datos */}
         <div>
           <label className="text-sm font-bold text-slate-400 uppercase mb-3 block">{t('data_management')}</label>
@@ -2356,35 +2679,57 @@ export default function App() {
             <Button onClick={handleExport} variant="secondary" className="w-full justify-start" icon={Download}>
               {t('export_data')}
             </Button>
-            
+
             <div className="relative">
-              <input 
-                type="file" 
+              <input
+                type="file"
                 ref={fileInputRef}
                 onChange={handleImport}
-                className="hidden" 
+                className="hidden"
                 accept=".json"
               />
               <Button onClick={() => fileInputRef.current?.click()} variant="secondary" className="w-full justify-start" icon={Upload}>
                 {t('import_data')}
               </Button>
             </div>
-            
+
             <div className="flex items-start gap-2 p-3 bg-yellow-500/10 rounded-lg text-yellow-500 text-xs">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" />
               <p>{t('import_alert')}</p>
             </div>
           </div>
         </div>
+        </div>
+
+        {/* Delete exercise confirmation */}
+        {deleteExConfirm && (
+          <div className="absolute inset-0 bg-slate-900/95 rounded-2xl flex items-center justify-center p-6 animate-in fade-in">
+            <div className="space-y-4 w-full">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-red-500/10 rounded-full text-red-500"><AlertCircle size={24} /></div>
+                <h3 className="text-lg font-bold text-white">{customExercises.find(e => e.id === deleteExConfirm)?.name}</h3>
+              </div>
+              <p className="text-slate-400 text-sm">{t('delete_exercise_warn')}</p>
+              <div className="flex gap-3">
+                <Button onClick={() => setDeleteExConfirm(null)} variant="secondary" className="flex-1">{t('cancel')}</Button>
+                <Button onClick={() => { deleteCustomExercise(deleteExConfirm); setDeleteExConfirm(null); }} variant="danger" className="flex-1">{t('confirm')}</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
-  );
+    );
+  };
 
   // --- VISTAS ---
 
   const DashboardView = () => (
-    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-      <div className="flex justify-end">
+    <div className="animate-in fade-in zoom-in duration-300 lg:grid lg:grid-cols-[360px_1fr] lg:gap-8 lg:items-start">
+      {/* Left column: goal + stats */}
+      <div className="space-y-6">
+      {/* Settings button — mobile only (desktop uses sidebar) */}
+      <div className="flex justify-end pt-4 lg:hidden">
         <button onClick={() => setShowSettings(true)} className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
           <Settings size={20} />
         </button>
@@ -2440,14 +2785,14 @@ export default function App() {
         </div>
       </Card>
 
-      {/* Stat cards — single horizontal scroll row with arrow controls */}
-      <div className="relative">
+      {/* Stat cards — mobile: horizontal scroll; desktop: 2×3 grid */}
+      <div className="relative lg:hidden">
         <button
           onClick={() => statsScrollRef.current?.scrollBy({ left: -312, behavior: 'smooth' })}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-full p-1 shadow-lg"
           style={{ backdropFilter: 'blur(4px)' }}
         ><ChevronLeft size={14} /></button>
-        <div ref={statsScrollRef} className="flex overflow-x-auto snap-x snap-proximity gap-3 pb-1 no-scrollbar px-6 overscroll-x-contain" style={{ touchAction: 'pan-x' }}>
+        <div ref={statsScrollRef} className="flex overflow-x-auto snap-x snap-proximity gap-3 pb-1 no-scrollbar px-6 overscroll-x-contain" style={{ touchAction: 'pan-x pan-y' }}>
           <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
             <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
               <Activity size={16} className="shrink-0" />
@@ -2498,7 +2843,36 @@ export default function App() {
         ><ChevronRight size={14} /></button>
       </div>
 
+      {/* Desktop stat grid: 2 × 3 */}
+      <div className="hidden lg:grid grid-cols-2 gap-3">
+        {[
+          { icon: Activity, label: t('total_workouts'), value: stats.totalWorkouts },
+          { icon: Dumbbell, label: t('total_sets'), value: stats.totalSets },
+          { icon: Clock, label: t('avg_duration'), value: stats.avgDuration, unit: t('min_label') },
+          { icon: Clock, label: t('total_time'), value: stats.totalHoursStr },
+          { icon: Trophy, label: t('streak'), value: stats.streak, unit: t('weeks_label') },
+          { icon: Dumbbell, label: t('fav_exercise'), value: stats.favExId ? getExName(stats.favExId) : '—', small: true },
+        ].map(({ icon: Icon, label, value, unit, small }) => (
+          <Card key={label} className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+            <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
+              <Icon size={14} className="shrink-0" />
+              <span className="text-[10px] font-bold uppercase truncate">{label}</span>
+            </div>
+            {small
+              ? <p className="text-base font-black text-white leading-tight">{value}</p>
+              : <p className="text-2xl font-black text-white">{value}{unit && <span className="text-xs text-slate-400 ml-1">{unit}</span>}</p>
+            }
+          </Card>
+        ))}
+      </div>
+
+      </div>{/* end left column */}
+
+      {/* Right column: charts */}
+      <div className="mt-6 lg:mt-0">
       <ChartSlider stats={stats} chartRange={chartRange} setChartRange={setChartRange} weeklyGoal={weeklyGoal} t={t} />
+      </div>
+
     </div>
   );
 
@@ -2518,18 +2892,27 @@ export default function App() {
     };
 
     return (
-      <div className="animate-in fade-in">
-        <div className="mb-4 flex gap-2">
-          <Button onClick={() => navigate('/routines/new')} className="flex-1 py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
+      <div className="animate-in fade-in lg:max-w-4xl">
+        <div className="mb-6 flex items-center gap-3">
+          <h2 className="hidden lg:block text-2xl font-black text-white flex-1">{t('routines')}</h2>
+          <Button onClick={() => navigate('/routines/new')} className="flex-1 lg:flex-none py-4 lg:py-2.5 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
             {t('create_routine')}
           </Button>
           <button
             onClick={() => setShowQRScanner(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-sm font-bold"
+            className="flex items-center gap-2 px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-sm font-semibold shrink-0"
           >
-            <ScanLine size={18} /> {t('scan_qr')}
+            <ScanLine size={16} /> {t('import')}
           </button>
         </div>
+
+        {routines.length === 0 && (
+          <div className="text-center py-20 space-y-3">
+            <Dumbbell size={56} className="mx-auto text-slate-700" />
+            <p className="font-bold text-slate-400">{t('no_routines')}</p>
+            <p className="text-slate-600 text-sm">{t('no_routines_hint')}</p>
+          </div>
+        )}
 
         <DndContext sensors={routineSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
@@ -2571,14 +2954,16 @@ export default function App() {
 
 
   const HistoryView = () => (
-    <div className="space-y-4 animate-in fade-in">
+    <div className="animate-in fade-in lg:max-w-4xl">
+      <h2 className="hidden lg:block text-2xl font-black text-white mb-6">{t('history')}</h2>
       {history.length === 0 ? (
         <div className="text-center py-20 opacity-50">
            <History size={64} className="mx-auto mb-4 text-slate-600"/>
            <p>{t('no_history')}</p>
         </div>
       ) : (
-        history.map(s => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {history.map(s => (
           <Card key={s.id} className="p-5">
              <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
                <div className="flex-1 min-w-0">
@@ -2598,28 +2983,76 @@ export default function App() {
                </div>
              </div>
              <div className="space-y-2">
-               {Object.entries(s.logs).map(([ex, sets]) => (
-                 <div key={ex} className="flex justify-between items-center text-sm">
-                   <span className="text-slate-300 font-medium">{getExName(ex)}</span>
-                   <span className="text-slate-500">{sets.length}</span>
-                 </div>
-               ))}
+               {Object.entries(s.logs).map(([ex, sets]) => {
+                 const hasPR = sets.some(set => set.isPR);
+                 return (
+                   <div key={ex} className="flex justify-between items-center text-sm">
+                     <span className="text-slate-300 font-medium flex items-center gap-1.5">
+                       {getExName(ex)}
+                       {hasPR && <Trophy size={12} className="text-yellow-400 shrink-0" />}
+                     </span>
+                     <span className="text-slate-500">{sets.length}</span>
+                   </div>
+                 );
+               })}
              </div>
           </Card>
-        ))
+        ))}
+        </div>
       )}
     </div>
   );
 
   const currentRoutineExercises = activeWorkout
-    ? (routines.find(r => r.id === activeWorkout.routineId)?.exercises ?? [])
+    ? [
+        ...(routines.find(r => r.id === activeWorkout.routineId)?.exercises ?? []),
+        ...(activeWorkout.extraExercises ?? []),
+      ]
     : [];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 pb-safe">
-      <div className="max-w-md md:max-w-2xl mx-auto min-h-screen flex flex-col relative bg-slate-950">
-        
-        <header className="px-6 pt-8 pb-4 flex justify-between items-center bg-slate-950 sticky top-0 z-10">
+      <div className="max-w-md lg:max-w-6xl mx-auto min-h-screen lg:h-screen flex flex-col lg:flex-row relative bg-slate-950">
+
+        {/* Desktop sidebar nav */}
+        {location.pathname !== '/workout' && (
+          <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-slate-800 bg-slate-950 px-5 py-8">
+            <h1 className="text-xl font-black italic tracking-tighter bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent mb-10 px-2">GYMTRACKER</h1>
+            <nav className="flex flex-col gap-1 flex-1">
+              {[
+                { path: '/dashboard', icon: BarChart3, label: t('dashboard') },
+                { path: '/routines', icon: Dumbbell, label: t('routines') },
+                { path: '/history', icon: History, label: t('history') },
+              ].map(item => {
+                const active = location.pathname === item.path ||
+                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                return (
+                  <button key={item.path} onClick={() => navigate(item.path)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-semibold ${
+                      active ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}>
+                    <item.icon size={18} />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="flex flex-col gap-2 pt-4 border-t border-slate-800">
+              <button onClick={() => setShowSettings(true)} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                <Settings size={18} /> {t('settings')}
+              </button>
+              <div className="flex items-center gap-3 px-4 py-2">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center font-bold text-[10px] text-white shrink-0">PRO</div>
+                <span className="text-xs text-slate-500 font-medium">GymTracker Pro</span>
+              </div>
+            </div>
+          </aside>
+        )}
+
+        {/* Right content column */}
+        <div className="flex-1 flex flex-col min-h-0">
+
+        <header className={`px-6 pt-8 pb-4 flex justify-between items-center bg-slate-950 sticky top-0 z-10${location.pathname !== '/workout' ? ' lg:hidden' : ''}`}>
           <div>
             <h1 className="text-2xl font-black italic tracking-tighter bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
               GYMTRACKER
@@ -2630,7 +3063,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${location.pathname === '/workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
+        <main className={`flex-1 px-4 lg:px-10 scrollbar-hide min-h-0 ${location.pathname === '/workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24 lg:pb-10 lg:pt-8'}`}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardView />} />
@@ -2684,6 +3117,8 @@ export default function App() {
               handleFinishWorkout={handleFinishWorkout}
               addExerciseToWorkout={addExerciseToWorkout}
               reorderRoutineExercises={reorderRoutineExercises}
+              checkPR={checkPR}
+              restTimerDefault={restTimerDefault}
               t={t}
               getExName={getExName}
               getExNameEn={getExNameEn}
@@ -2698,8 +3133,8 @@ export default function App() {
         </main>
 
         {location.pathname !== '/workout' && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-30 pb-safe">
-            <div className="max-w-md md:max-w-2xl mx-auto flex justify-around items-center h-20 px-2">
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-30 pb-safe">
+            <div className="max-w-md mx-auto flex justify-around items-center h-20 px-2">
               {[
                 { id: 'dashboard', icon: BarChart3, label: t('dashboard') },
                 { id: 'routines', icon: Dumbbell, label: t('routines') },
@@ -2736,6 +3171,8 @@ export default function App() {
           onCancel={() => setConfirmModal(prev => ({...prev, isOpen: false}))}
           t={t}
         />
+        </div>{/* end right content column */}
+
         {showSettings && <SettingsModal />}
 
         {/* QR Export Modal */}
