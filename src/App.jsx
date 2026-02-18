@@ -131,7 +131,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volumen', chart_duration: 'Duración', chart_sets: 'Series',
     chart_freq: 'Frecuencia', chart_muscle: 'Por Músculo',
     avg_duration: 'Dur. Promedio', streak: 'Racha', fav_exercise: 'Ejercicio Fav.',
-    total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem', min_label: 'min',
+    total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem', min_label: 'min', this_week: 'esta semana',
     tab_exercises: 'Ejercicios',
     no_exercises_selected: 'Sin ejercicios seleccionados',
     camera_error: 'No se pudo acceder a la cámara',
@@ -302,7 +302,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volume', chart_duration: 'Duration', chart_sets: 'Sets',
     chart_freq: 'Frequency', chart_muscle: 'Muscle Split',
     avg_duration: 'Avg. Duration', streak: 'Streak', fav_exercise: 'Top Exercise',
-    total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks', min_label: 'min',
+    total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks', min_label: 'min', this_week: 'this week',
     tab_exercises: 'Exercises',
     no_exercises_selected: 'No exercises selected',
     camera_error: 'Could not access camera',
@@ -473,7 +473,7 @@ const TRANSLATIONS = {
     chart_volume: 'Volume', chart_duration: 'Durée', chart_sets: 'Séries',
     chart_freq: 'Fréquence', chart_muscle: 'Par Muscle',
     avg_duration: 'Durée Moy.', streak: 'Série', fav_exercise: 'Exercice Fav.',
-    total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem', min_label: 'min',
+    total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem', min_label: 'min', this_week: 'cette semaine',
     tab_exercises: 'Exercices',
     no_exercises_selected: 'Aucun exercice sélectionné',
     camera_error: 'Caméra inaccessible',
@@ -1744,12 +1744,10 @@ const SetsChart = React.memo(function SetsChart({ data }) {
   );
 });
 
-const GoalRingChart = React.memo(function GoalRingChart({ freqData, weeklyGoal, t }) {
-  const avg = freqData.length > 0
-    ? freqData.reduce((s, w) => s + w.count, 0) / freqData.length
-    : 0;
-  const pct = Math.min(Math.round((avg / weeklyGoal) * 100), 100);
-  const ringData = [{ value: pct, fill: pct >= 100 ? '#10b981' : '#3b82f6' }];
+const GoalRingChart = React.memo(function GoalRingChart({ sessionsThisWeek, weeklyGoal, t }) {
+  const pct = Math.min((sessionsThisWeek / weeklyGoal) * 100, 100);
+  const color = pct >= 100 ? '#10b981' : '#3b82f6';
+  const ringData = [{ value: pct, fill: color }];
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       <ResponsiveContainer width="100%" height="100%">
@@ -1759,9 +1757,9 @@ const GoalRingChart = React.memo(function GoalRingChart({ freqData, weeklyGoal, 
         </RadialBarChart>
       </ResponsiveContainer>
       <div className="absolute flex flex-col items-center pointer-events-none">
-        <span className="text-2xl font-black text-white">{avg.toFixed(1)}</span>
+        <span className="text-2xl font-black text-white">{sessionsThisWeek}</span>
         <span className="text-[10px] text-slate-400 leading-tight">/ {weeklyGoal} {t('sessions_label')}</span>
-        <span className="text-[10px] font-bold mt-0.5" style={{ color: pct >= 100 ? '#10b981' : '#3b82f6' }}>{pct}%</span>
+        <span className="text-[10px] font-bold mt-0.5" style={{ color }}>{t('this_week')}</span>
       </div>
     </div>
   );
@@ -1783,7 +1781,7 @@ const MuscleChart = React.memo(function MuscleChart({ data, setsLabel }) {
   );
 });
 
-const CHART_LABELS_KEY = ['chart_volume', 'chart_duration', 'chart_sets', 'chart_freq', 'chart_muscle'];
+const CHART_LABELS_KEY = ['chart_freq', 'chart_muscle', 'chart_volume', 'chart_duration', 'chart_sets'];
 
 const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChartRange, weeklyGoal, t }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -1818,11 +1816,11 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
           style={{ touchAction: 'pan-x' }}
           onScroll={handleScroll}
         >
+          <ChartSlide title={t('chart_freq')}><GoalRingChart sessionsThisWeek={stats.uniqueDaysCount} weeklyGoal={weeklyGoal} t={t} /></ChartSlide>
+          <ChartSlide title={t('chart_muscle')}><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></ChartSlide>
           <ChartSlide title={t('chart_volume')}><VolumeChart data={stats.volumeData} /></ChartSlide>
           <ChartSlide title={t('chart_duration')}><DurationChart data={stats.durationData} /></ChartSlide>
           <ChartSlide title={t('chart_sets')}><SetsChart data={stats.setsData} /></ChartSlide>
-          <ChartSlide title={t('chart_freq')}><GoalRingChart freqData={stats.freqData} weeklyGoal={weeklyGoal} t={t} /></ChartSlide>
-          <ChartSlide title={t('chart_muscle')}><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></ChartSlide>
         </div>
         {/* Right-edge fade hint */}
         <div className="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-slate-800 to-transparent pointer-events-none rounded-r-xl" />
@@ -1840,11 +1838,11 @@ const ChartSlider = React.memo(function ChartSlider({ stats, chartRange, setChar
 
       {/* Desktop: 2-column grid */}
       <div className="hidden md:grid md:grid-cols-2 gap-4">
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><GoalRingChart sessionsThisWeek={stats.uniqueDaysCount} weeklyGoal={weeklyGoal} t={t} /></div></div>
+        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-40"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_volume')}</p><div className="h-40"><VolumeChart data={stats.volumeData} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_duration')}</p><div className="h-40"><DurationChart data={stats.durationData} /></div></div>
         <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_sets')}</p><div className="h-40"><SetsChart data={stats.setsData} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_freq')}</p><div className="h-40"><GoalRingChart freqData={stats.freqData} weeklyGoal={weeklyGoal} t={t} /></div></div>
-        <div><p className="text-xs font-bold text-slate-400 uppercase mb-2">{t('chart_muscle')}</p><div className="h-40"><MuscleChart data={stats.muscleData} setsLabel={setsLabel} /></div></div>
       </div>
     </Card>
   );
