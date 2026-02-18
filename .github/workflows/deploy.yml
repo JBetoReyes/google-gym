@@ -21,7 +21,8 @@ jobs:
 
       - run: npm run build
 
-      - run: npx netlify-cli deploy --dir=dist --prod
+      - name: Deploy to Netlify
+        run: npx netlify-cli@latest deploy --dir=dist --prod --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN --message="Deploy from GH Actions - ${{ github.sha }}"
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
