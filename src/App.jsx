@@ -169,7 +169,27 @@ const TRANSLATIONS = {
       // Abs - nuevos
       crunch_polea: 'Crunch en Polea',
       woodchop: 'Wood Chop',
-      twist_ruso: 'Twist Ruso'
+      twist_ruso: 'Twist Ruso',
+      // Hammer/Máquinas - nuevos
+      hs_chest: 'Press Hammer Pecho',
+      hs_incline: 'Press Hammer Inclinado',
+      pec_fly: 'Fly en Máquina',
+      cable_fly_high: 'Cruce Polea Alta',
+      hs_row: 'Remo Hammer',
+      hs_pulldown: 'Jalón Hammer',
+      chest_supported: 'Remo Pecho Apoyado',
+      hs_leg_press: 'Prensa Hammer',
+      fem_sent: 'Curl Femoral Sentado',
+      bulgarian: 'Sentadilla Búlgara',
+      hs_shoulder: 'Press Hammer Hombro',
+      lat_raise_maq: 'Máquina Elevaciones',
+      cable_front: 'Elevación Frontal Polea',
+      skull_crusher: 'Rompe Cráneos',
+      tricep_kickback_m: 'Patada de Tríceps',
+      cable_curl_high: 'Curl Polea Alta',
+      bayesian_curl: 'Curl Bayesiano',
+      leg_raise: 'Elevaciones de Piernas',
+      ab_wheel: 'Rueda Abdominal'
     }
   },
   en: {
@@ -296,7 +316,27 @@ const TRANSLATIONS = {
       // Abs - new
       crunch_polea: 'Cable Crunch',
       woodchop: 'Wood Chop',
-      twist_ruso: 'Russian Twist'
+      twist_ruso: 'Russian Twist',
+      // Hammer/Machines - new
+      hs_chest: 'Hammer Strength Chest Press',
+      hs_incline: 'Hammer Strength Incline Press',
+      pec_fly: 'Pec Fly Machine',
+      cable_fly_high: 'High Cable Fly',
+      hs_row: 'Hammer Strength Row',
+      hs_pulldown: 'Hammer Strength Pulldown',
+      chest_supported: 'Chest Supported Row',
+      hs_leg_press: 'Hammer Strength Leg Press',
+      fem_sent: 'Seated Leg Curl',
+      bulgarian: 'Bulgarian Split Squat',
+      hs_shoulder: 'Hammer Strength Shoulder Press',
+      lat_raise_maq: 'Lateral Raise Machine',
+      cable_front: 'Cable Front Raise',
+      skull_crusher: 'Skull Crusher',
+      tricep_kickback_m: 'Tricep Kickback',
+      cable_curl_high: 'High Cable Curl',
+      bayesian_curl: 'Bayesian Curl',
+      leg_raise: 'Leg Raises',
+      ab_wheel: 'Ab Wheel'
     }
   },
   fr: {
@@ -423,7 +463,27 @@ const TRANSLATIONS = {
       // Abdos - nouveaux
       crunch_polea: 'Crunch poulie',
       woodchop: 'Wood Chop',
-      twist_ruso: 'Rotation russe'
+      twist_ruso: 'Rotation russe',
+      // Hammer/Machines - nouveaux
+      hs_chest: 'Presse Hammer Poitrine',
+      hs_incline: 'Presse Hammer Incliné',
+      pec_fly: 'Machine Fly Pectoraux',
+      cable_fly_high: 'Écarté Poulie Haute',
+      hs_row: 'Rowing Hammer',
+      hs_pulldown: 'Tirage Hammer',
+      chest_supported: 'Rowing Poitrine Appuyé',
+      hs_leg_press: 'Presse Jambes Hammer',
+      fem_sent: 'Leg Curl Assis',
+      bulgarian: 'Squat Bulgare',
+      hs_shoulder: 'Presse Hammer Épaules',
+      lat_raise_maq: 'Machine Élévations Latérales',
+      cable_front: 'Élévation Frontale Câble',
+      skull_crusher: 'Skull Crusher',
+      tricep_kickback_m: 'Extension Triceps Arrière',
+      cable_curl_high: 'Curl Poulie Haute',
+      bayesian_curl: 'Curl Bayésien',
+      leg_raise: 'Élévations de Jambes',
+      ab_wheel: 'Roue Abdominale'
     }
   }
 };
@@ -624,6 +684,31 @@ const EXERCISE_CATALOG = [
   { id: 'crunch_polea', name: 'Crunch en Polea', muscle: 'Abs' },
   { id: 'woodchop', name: 'Wood Chop', muscle: 'Abs' },
   { id: 'twist_ruso', name: 'Twist Ruso', muscle: 'Abs' },
+  // Pecho - Hammer/Máquinas
+  { id: 'hs_chest',       name: 'Press Hammer Pecho',      muscle: 'Pecho' },
+  { id: 'hs_incline',     name: 'Press Hammer Inclinado',  muscle: 'Pecho' },
+  { id: 'pec_fly',        name: 'Fly en Máquina',          muscle: 'Pecho' },
+  { id: 'cable_fly_high', name: 'Cruce Polea Alta',        muscle: 'Pecho' },
+  // Espalda - Hammer
+  { id: 'hs_row',          name: 'Remo Hammer',            muscle: 'Espalda' },
+  { id: 'hs_pulldown',     name: 'Jalón Hammer',           muscle: 'Espalda' },
+  { id: 'chest_supported', name: 'Remo Pecho Apoyado',     muscle: 'Espalda' },
+  // Pierna - nuevos
+  { id: 'hs_leg_press', name: 'Prensa Hammer',          muscle: 'Pierna' },
+  { id: 'fem_sent',     name: 'Curl Femoral Sentado',   muscle: 'Pierna' },
+  { id: 'bulgarian',    name: 'Sentadilla Búlgara',     muscle: 'Pierna' },
+  // Hombro - nuevos
+  { id: 'hs_shoulder',   name: 'Press Hammer Hombro',      muscle: 'Hombro' },
+  { id: 'lat_raise_maq', name: 'Máquina Elevaciones',      muscle: 'Hombro' },
+  { id: 'cable_front',   name: 'Elevación Frontal Polea',  muscle: 'Hombro' },
+  // Brazos - nuevos
+  { id: 'skull_crusher',     name: 'Rompe Cráneos',      muscle: 'Brazos' },
+  { id: 'tricep_kickback_m', name: 'Patada de Tríceps',  muscle: 'Brazos' },
+  { id: 'cable_curl_high',   name: 'Curl Polea Alta',    muscle: 'Brazos' },
+  { id: 'bayesian_curl',     name: 'Curl Bayesiano',     muscle: 'Brazos' },
+  // Abs - nuevos
+  { id: 'leg_raise', name: 'Elevaciones de Piernas', muscle: 'Abs' },
+  { id: 'ab_wheel',  name: 'Rueda Abdominal',         muscle: 'Abs' },
 ];
 
 const INITIAL_ROUTINES = [
@@ -729,11 +814,11 @@ const BodyDiagramSVG = ({ muscle, color }) => {
 };
 
 // --- Modal de Anatomía ---
-const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName }) => {
+const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName, allExercises }) => {
   if (!exerciseId) return null;
 
-  let exInfo = EXERCISE_CATALOG.find(e => e.id === exerciseId);
-  if (!exInfo) exInfo = EXERCISE_CATALOG.find(e => e.name === exerciseId);
+  let exInfo = allExercises.find(e => e.id === exerciseId);
+  if (!exInfo) exInfo = allExercises.find(e => e.name === exerciseId);
   const muscle = exInfo?.muscle || 'Cardio';
   const exName = getExName(exerciseId);
 
@@ -785,20 +870,31 @@ const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName }) => {
 };
 
 // --- Routine Creation Form (module-level so its reference is stable across App re-renders) ---
-const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel }) => {
+const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel, exercises, onAddCustomExercise }) => {
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customMuscle, setCustomMuscle] = useState('Pecho');
 
   const toggleSelection = (exId) => {
     setSelectedExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
   };
 
-  const filteredExercises = EXERCISE_CATALOG.filter(ex => {
+  const filteredExercises = exercises.filter(ex => {
     const exName = t('ex_names')[ex.id] || ex.name;
     const muscle = t('muscles')[ex.muscle] || ex.muscle;
     return exName.toLowerCase().includes(searchTerm.toLowerCase()) || muscle.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  const handleAddCustom = () => {
+    if (!customName.trim()) return;
+    onAddCustomExercise(customName.trim(), customMuscle);
+    setCustomName('');
+    setCustomMuscle('Pecho');
+    setShowAddForm(false);
+  };
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] animate-in slide-in-from-right">
@@ -822,6 +918,53 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
             onChange={e => setSearchTerm(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Custom exercise creation */}
+      <div className="mb-3">
+        {!showAddForm ? (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold px-1 py-1 transition-colors"
+          >
+            <Plus size={16} /> Crear ejercicio
+          </button>
+        ) : (
+          <div className="bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-bold text-blue-400">Nuevo ejercicio</p>
+            <input
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Nombre del ejercicio"
+              value={customName}
+              onChange={e => setCustomName(e.target.value)}
+              autoFocus
+            />
+            <select
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+              value={customMuscle}
+              onChange={e => setCustomMuscle(e.target.value)}
+            >
+              {['Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+                <option key={m} value={m}>{t('muscles')[m] || m}</option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddCustom}
+                disabled={!customName.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
+              >
+                Agregar
+              </button>
+              <button
+                onClick={() => { setShowAddForm(false); setCustomName(''); }}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 rounded-lg text-sm transition-colors"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto pr-1 space-y-2">
@@ -888,12 +1031,12 @@ export default function App() {
   
   // Helper para traducir nombre de ejercicio
   const getExName = (idOrName) => {
-    const entry = EXERCISE_CATALOG.find(e => e.id === idOrName || e.name === idOrName);
+    const entry = allExercises.find(e => e.id === idOrName || e.name === idOrName);
     if (entry) return TRANSLATIONS[lang].ex_names[entry.id] || entry.name;
     return idOrName;
   };
   const getExNameEn = (idOrName) => {
-    const entry = EXERCISE_CATALOG.find(e => e.id === idOrName || e.name === idOrName);
+    const entry = allExercises.find(e => e.id === idOrName || e.name === idOrName);
     if (entry) return TRANSLATIONS.en.ex_names[entry.id] || entry.name;
     return idOrName;
   };
@@ -934,6 +1077,11 @@ export default function App() {
   // Controls whether the creation form is shown (in App so it survives anatomy modal re-renders)
   const [isCreating, setIsCreating] = useState(false);
 
+  const [customExercises, setCustomExercises] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gym_custom_exercises') || '[]'); }
+    catch { return []; }
+  });
+
   // ActiveWorkoutView state lifted to avoid remount when App re-renders
   const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
   
@@ -951,6 +1099,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gym_history', JSON.stringify(history)); }, [history]);
   useEffect(() => { localStorage.setItem('gym_weekly_goal', weeklyGoal.toString()); }, [weeklyGoal]);
   useEffect(() => { localStorage.setItem('gym_lang', lang); }, [lang]);
+  useEffect(() => { localStorage.setItem('gym_custom_exercises', JSON.stringify(customExercises)); }, [customExercises]);
 
   // --- Wrapper para Confirmaciones ---
   const triggerConfirm = (title, message, action) => {
@@ -994,6 +1143,11 @@ export default function App() {
     };
     reader.readAsText(file);
   };
+
+  const allExercises = useMemo(
+    () => [...EXERCISE_CATALOG, ...customExercises],
+    [customExercises]
+  );
 
   // --- Lógica de Stats ---
   const stats = useMemo(() => {
@@ -1119,6 +1273,13 @@ export default function App() {
     triggerConfirm(t('delete_session'), t('delete_msg'), () => {
       setHistory(prev => prev.filter(s => s.id !== id));
     });
+  };
+
+  const addCustomExercise = (name, muscle) => {
+    setCustomExercises(prev => [
+      ...prev,
+      { id: `custom_${Date.now()}`, name, muscle }
+    ]);
   };
 
   // --- Settings Modal ---
@@ -1341,8 +1502,8 @@ export default function App() {
     };
 
     // Resolver info del ejercicio (manejando IDs o Nombres legacy)
-    let exInfo = EXERCISE_CATALOG.find(e => e.id === selectedExercise);
-    if (!exInfo) exInfo = EXERCISE_CATALOG.find(e => e.name === selectedExercise);
+    let exInfo = allExercises.find(e => e.id === selectedExercise);
+    if (!exInfo) exInfo = allExercises.find(e => e.name === selectedExercise);
 
     const isCardio = exInfo?.muscle === 'Cardio';
 
@@ -1361,8 +1522,8 @@ export default function App() {
             const active = selectedExercise === ex;
             const count = (activeWorkout.logs[ex] || []).length;
             // Buscar info para el icono
-            let info = EXERCISE_CATALOG.find(e => e.id === ex);
-            if (!info) info = EXERCISE_CATALOG.find(e => e.name === ex);
+            let info = allExercises.find(e => e.id === ex);
+            if (!info) info = allExercises.find(e => e.name === ex);
 
             return (
               <button key={ex} onClick={() => setSelectedExercise(ex)} 
@@ -1543,6 +1704,8 @@ export default function App() {
               onOpenAnatomy={setAnatomyExercise}
               onSave={(name, exercises) => { addNewRoutine(name, exercises); setIsCreating(false); }}
               onCancel={() => setIsCreating(false)}
+              exercises={allExercises}
+              onAddCustomExercise={addCustomExercise}
             />
           )}
           {activeTab === 'routines' && !isCreating && <RoutinesView />}
@@ -1578,6 +1741,7 @@ export default function App() {
           t={t}
           getExName={getExName}
           getMuscleName={getMuscleName}
+          allExercises={allExercises}
         />
         <CelebrationModal achievements={achievements} onClose={() => setAchievements([])} t={t} />
         <ConfirmationModal 
