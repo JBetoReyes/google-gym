@@ -942,7 +942,8 @@ const FrontBodySVG = ({ muscle, color, secondary = [] }) => {
 
   const c = (id) => {
     if (active.includes(id)) return color;
-    if (secondary.some(sm => (FRONT_ACTIVE[sm] || []).includes(id))) return MUSCLE_COLORS[sm] || '#64748b';
+    const secMuscle = secondary.find(sm => (FRONT_ACTIVE[sm] || []).includes(id));
+    if (secMuscle) return MUSCLE_COLORS[secMuscle] || '#64748b';
     return dim;
   };
   const o = (id) => {
@@ -1031,7 +1032,8 @@ const BackBodySVG = ({ muscle, color, secondary = [] }) => {
 
   const c = (id) => {
     if (active.includes(id)) return color;
-    if (secondary.some(sm => (BACK_ACTIVE[sm] || []).includes(id))) return MUSCLE_COLORS[sm] || '#64748b';
+    const secMuscle = secondary.find(sm => (BACK_ACTIVE[sm] || []).includes(id));
+    if (secMuscle) return MUSCLE_COLORS[secMuscle] || '#64748b';
     return dim;
   };
   const o = (id) => {
