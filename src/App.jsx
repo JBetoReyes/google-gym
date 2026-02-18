@@ -32,8 +32,22 @@ import {
   Camera,
   AlertCircle,
   Pencil,
-  Zap
+  Zap,
+  GripVertical,
+  QrCode,
+  ScanLine
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import QrScanner from 'qr-scanner';
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor,
+  useSensor, useSensors
+} from '@dnd-kit/core';
+import {
+  SortableContext, sortableKeyboardCoordinates,
+  verticalListSortingStrategy, useSortable, arrayMove
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { 
   BarChart, 
   Bar, 
@@ -97,6 +111,14 @@ const TRANSLATIONS = {
     add_exercise: 'Agregar Ejercicio',
     focus_mode: 'Modo Enfoque',
     last_set: 'Último:',
+    share_routine: 'Compartir',
+    scan_qr: 'Escanear QR',
+    routine_qr_title: 'Código QR',
+    import_routine: 'Importar Rutina',
+    import_confirm: '¿Agregar esta rutina a tu lista?',
+    reorder_exercises: 'Reordenar',
+    selected: 'Seleccionados',
+    camera_error: 'No se pudo acceder a la cámara',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -253,6 +275,14 @@ const TRANSLATIONS = {
     add_exercise: 'Add Exercise',
     focus_mode: 'Focus Mode',
     last_set: 'Last:',
+    share_routine: 'Share',
+    scan_qr: 'Scan QR',
+    routine_qr_title: 'QR Code',
+    import_routine: 'Import Routine',
+    import_confirm: 'Add this routine to your list?',
+    reorder_exercises: 'Reorder',
+    selected: 'Selected',
+    camera_error: 'Could not access camera',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -409,6 +439,14 @@ const TRANSLATIONS = {
     add_exercise: 'Ajouter un Exercice',
     focus_mode: 'Mode Focus',
     last_set: 'Dernier:',
+    share_routine: 'Partager',
+    scan_qr: 'Scanner QR',
+    routine_qr_title: 'Code QR',
+    import_routine: 'Importer Routine',
+    import_confirm: 'Ajouter cette routine?',
+    reorder_exercises: 'Réordonner',
+    selected: 'Sélectionnés',
+    camera_error: 'Caméra inaccessible',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -900,6 +938,115 @@ const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName, allExe
   );
 };
 
+// --- Sortable helper components ---
+function SortableRoutineCard({ routine, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: routine.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <button
+        {...attributes} {...listeners}
+        className="absolute top-3 left-3 z-10 p-1 text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing touch-none"
+      >
+        <GripVertical size={18} />
+      </button>
+      {children}
+    </div>
+  );
+}
+
+function SortableExerciseItem({ id, label, onRemove }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style}
+      className="flex items-center gap-2 bg-slate-800 border border-blue-500/40 rounded-xl px-3 py-2.5">
+      <button {...attributes} {...listeners} className="text-slate-500 hover:text-slate-300 touch-none cursor-grab active:cursor-grabbing">
+        <GripVertical size={16} />
+      </button>
+      <span className="flex-1 text-white font-semibold text-sm truncate">{label}</span>
+      {onRemove && (
+        <button onClick={() => onRemove(id)} className="text-slate-500 hover:text-red-400 p-1">
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function QRScannerModal({ t, onScan, onClose }) {
+  const videoRef = useRef(null);
+  const scannerRef = useRef(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    scannerRef.current = new QrScanner(
+      videoRef.current,
+      (result) => {
+        try {
+          const data = JSON.parse(result.data);
+          if (data.v === 1 && data.routine?.name && Array.isArray(data.routine?.exercises)) {
+            scannerRef.current?.stop();
+            onScan(data.routine);
+          }
+        } catch {}
+      },
+      { highlightScanRegion: true, highlightCodeOutline: true }
+    );
+    scannerRef.current.start().catch(() => setError(t('camera_error')));
+    return () => scannerRef.current?.stop();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+      <div className="flex justify-between items-center p-4">
+        <h3 className="text-white font-bold">{t('scan_qr')}</h3>
+        <button onClick={onClose}><X size={24} className="text-white" /></button>
+      </div>
+      {error
+        ? <div className="flex-1 flex items-center justify-center text-red-400 p-6 text-center">{error}</div>
+        : <video ref={videoRef} className="flex-1 w-full object-cover" />
+      }
+    </div>
+  );
+}
+
+function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
+  const [order, setOrder] = useState(exercises);
+  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl p-6 max-h-[80vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-white">{t('reorder_exercises')}</h3>
+          <button onClick={onClose}><X size={20} className="text-slate-400" /></button>
+        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter}
+          onDragEnd={({ active, over }) => {
+            if (active.id !== over?.id)
+              setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)));
+          }}>
+          <SortableContext items={order} strategy={verticalListSortingStrategy}>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+              {order.map(exId => (
+                <SortableExerciseItem key={exId} id={exId} label={getExName(exId)} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+        <button
+          onClick={() => onSave(order)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all active:scale-95 bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20 shadow-lg"
+        >
+          {t('save_routine')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // --- Routine Creation Form (module-level so its reference is stable across App re-renders) ---
 const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel, exercises, onAddCustomExercise, initialName = '', initialExercises = [] }) => {
   const [name, setName] = useState(initialName);
@@ -908,6 +1055,11 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
   const [showAddForm, setShowAddForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customMuscle, setCustomMuscle] = useState('Pecho');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const toggleSelection = (exId) => {
     setSelectedExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
@@ -997,6 +1149,35 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
           </div>
         )}
       </div>
+
+      {selectedExercises.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
+            {t('selected')} ({selectedExercises.length})
+          </p>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={({ active, over }) => {
+              if (active.id !== over?.id) {
+                setSelectedExercises(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)));
+              }
+            }}
+          >
+            <SortableContext items={selectedExercises} strategy={verticalListSortingStrategy}>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {selectedExercises.map(exId => (
+                  <SortableExerciseItem
+                    key={exId} id={exId}
+                    label={getExName(exId)}
+                    onRemove={(id) => setSelectedExercises(prev => prev.filter(e => e !== id))}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto pr-1 space-y-2">
         {filteredExercises.map(ex => {
@@ -1133,6 +1314,12 @@ export default function App() {
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
   const [workoutPickerSearch, setWorkoutPickerSearch] = useState('');
   const [focusMode, setFocusMode] = useState(false);
+
+  // QR & reorder state
+  const [showQRExport, setShowQRExport] = useState(null); // null | routine object
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [pendingImport, setPendingImport] = useState(null); // null | { name, exercises }
+  const [showExerciseReorder, setShowExerciseReorder] = useState(false);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -1348,6 +1535,10 @@ export default function App() {
      });
   };
 
+  const reorderRoutineExercises = (routineId, newExercises) => {
+    setRoutines(prev => prev.map(r => r.id === routineId ? { ...r, exercises: newExercises } : r));
+  };
+
   const deleteSession = (id) => {
     triggerConfirm(t('delete_session'), t('delete_msg'), () => {
       setHistory(prev => prev.filter(s => s.id !== id));
@@ -1527,40 +1718,68 @@ export default function App() {
   );
 
   const RoutinesView = () => {
+    const routineSensors = useSensors(
+      useSensor(PointerSensor),
+      useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = ({ active, over }) => {
+      if (active.id !== over?.id) {
+        setRoutines(prev => arrayMove(prev,
+          prev.findIndex(r => r.id === active.id),
+          prev.findIndex(r => r.id === over.id)
+        ));
+      }
+    };
+
     return (
       <div className="animate-in fade-in">
-        <div className="mb-4">
-          <Button onClick={() => navigate('/routines/new')} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
+        <div className="mb-4 flex gap-2">
+          <Button onClick={() => navigate('/routines/new')} className="flex-1 py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
             {t('create_routine')}
           </Button>
+          <button
+            onClick={() => setShowQRScanner(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-all text-sm font-bold"
+          >
+            <ScanLine size={18} /> {t('scan_qr')}
+          </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {routines.map(routine => (
-          <Card key={routine.id} className="p-5 group hover:border-slate-600 transition-colors">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-bold text-xl text-white mb-1">{routine.name}</h3>
-                <p className="text-slate-400 text-sm">{routine.exercises.length} {t('exercises')}</p>
-              </div>
-              <div className="flex gap-1">
-                <button onClick={() => navigate('/routines/' + routine.id + '/edit')} className="text-slate-600 hover:text-blue-400 p-2"><Pencil size={18} /></button>
-                <button onClick={() => deleteRoutine(routine.id)} className="text-slate-600 hover:text-red-400 p-2"><Trash2 size={18} /></button>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {routine.exercises.slice(0, 3).map((ex, i) => (
-                <span key={i} className="text-xs bg-slate-900 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
-                  {getExName(ex)}
-                </span>
+
+        <DndContext sensors={routineSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={routines.map(r => r.id)} strategy={verticalListSortingStrategy}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {routines.map(routine => (
+                <SortableRoutineCard key={routine.id} routine={routine}>
+                  <Card className="p-5 pl-9 group hover:border-slate-600 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-xl text-white mb-1">{routine.name}</h3>
+                        <p className="text-slate-400 text-sm">{routine.exercises.length} {t('exercises')}</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => navigate('/routines/' + routine.id + '/edit')} className="text-slate-600 hover:text-blue-400 p-2"><Pencil size={18} /></button>
+                        <button onClick={() => setShowQRExport(routine)} className="text-slate-600 hover:text-emerald-400 p-2"><QrCode size={18} /></button>
+                        <button onClick={() => deleteRoutine(routine.id)} className="text-slate-600 hover:text-red-400 p-2"><Trash2 size={18} /></button>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {routine.exercises.slice(0, 3).map((ex, i) => (
+                        <span key={i} className="text-xs bg-slate-900 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
+                          {getExName(ex)}
+                        </span>
+                      ))}
+                      {routine.exercises.length > 3 && <span className="text-xs text-slate-500 py-1">+{routine.exercises.length - 3}</span>}
+                    </div>
+                    <Button variant="success" className="w-full font-bold" icon={Play} onClick={() => handleStartWorkout(routine)}>
+                      {t('start')}
+                    </Button>
+                  </Card>
+                </SortableRoutineCard>
               ))}
-              {routine.exercises.length > 3 && <span className="text-xs text-slate-500 py-1">+{routine.exercises.length - 3}</span>}
             </div>
-            <Button variant="success" className="w-full font-bold" icon={Play} onClick={() => handleStartWorkout(routine)}>
-              {t('start')}
-            </Button>
-          </Card>
-        ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
     );
   };
@@ -1636,6 +1855,13 @@ export default function App() {
             className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
           >
             <Plus size={18} />
+          </button>
+          <button
+            onClick={() => setShowExerciseReorder(true)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+            title={t('reorder_exercises')}
+          >
+            <GripVertical size={18} />
           </button>
         </div>
 
@@ -1766,6 +1992,19 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {showExerciseReorder && (
+          <ExerciseReorderModal
+            exercises={routine.exercises}
+            getExName={getExName}
+            t={t}
+            onSave={(newOrder) => {
+              reorderRoutineExercises(activeWorkout.routineId, newOrder);
+              setShowExerciseReorder(false);
+            }}
+            onClose={() => setShowExerciseReorder(false)}
+          />
+        )}
 
         {showWorkoutPicker && (
           <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
@@ -1944,6 +2183,63 @@ export default function App() {
           t={t}
         />
         {showSettings && <SettingsModal />}
+
+        {/* QR Export Modal */}
+        {showQRExport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6 animate-in fade-in">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm flex flex-col items-center gap-4">
+              <div className="flex items-center justify-between w-full">
+                <h3 className="font-bold text-white">{t('routine_qr_title')}: {showQRExport.name}</h3>
+                <button onClick={() => setShowQRExport(null)}><X size={20} className="text-slate-400" /></button>
+              </div>
+              <div className="bg-white p-4 rounded-xl">
+                <QRCodeSVG
+                  value={JSON.stringify({ v: 1, routine: { name: showQRExport.name, exercises: showQRExport.exercises } })}
+                  size={220}
+                  level="M"
+                />
+              </div>
+              <p className="text-xs text-slate-500 text-center">{showQRExport.exercises.length} {t('exercises')}</p>
+            </div>
+          </div>
+        )}
+
+        {/* QR Scanner Modal */}
+        {showQRScanner && (
+          <QRScannerModal
+            t={t}
+            onScan={(routine) => {
+              setShowQRScanner(false);
+              setPendingImport(routine);
+            }}
+            onClose={() => setShowQRScanner(false)}
+          />
+        )}
+
+        {/* Import Confirmation */}
+        {pendingImport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6 animate-in fade-in">
+            <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-sm space-y-4">
+              <h3 className="font-bold text-white">{t('import_routine')}</h3>
+              <p className="text-slate-400 text-sm">{t('import_confirm')}</p>
+              <div className="bg-slate-800 rounded-xl p-4">
+                <p className="text-white font-bold mb-2">{pendingImport.name}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {pendingImport.exercises.map((ex, i) => (
+                    <span key={i} className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-lg">{getExName(ex)}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={() => {
+                  addNewRoutine(pendingImport.name, pendingImport.exercises);
+                  setPendingImport(null);
+                }} className="flex-1">{t('import_routine')}</Button>
+                <Button variant="secondary" onClick={() => setPendingImport(null)} className="flex-1">{t('cancel')}</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
