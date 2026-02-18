@@ -27,8 +27,9 @@ import {
   Upload,
   AlertTriangle,
   Youtube,
-  Image, // Icono de imagen
-  AlertCircle // Para el modal de confirmación
+  Image,
+  Camera,
+  AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -82,7 +83,8 @@ const TRANSLATIONS = {
     goal_met_title: '¡Meta Cumplida!',
     goal_met_desc: 'Has completado tus días de entrenamiento.',
     watch_tutorial: 'Ver tutorial',
-    view_images: 'Ver imágenes',
+    view_images: 'Ver diagrama',
+    view_anatomy: 'Ver anatomía',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -207,7 +209,8 @@ const TRANSLATIONS = {
     goal_met_title: 'Goal Met!',
     goal_met_desc: 'You completed your training days.',
     watch_tutorial: 'Watch tutorial',
-    view_images: 'View images',
+    view_images: 'View diagram',
+    view_anatomy: 'View anatomy',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -332,7 +335,8 @@ const TRANSLATIONS = {
     goal_met_title: 'Objectif Atteint!',
     goal_met_desc: 'Vous avez terminé vos jours d\'entraînement.',
     watch_tutorial: 'Voir le tutoriel',
-    view_images: 'Voir images',
+    view_images: 'Voir diagramme',
+    view_anatomy: 'Voir anatomie',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -632,6 +636,151 @@ const INITIAL_ROUTINES = [
   }
 ];
 
+// --- Diagrama Corporal SVG ---
+const BodyDiagramSVG = ({ muscle, color }) => {
+  const dim = '#334155';
+  const head = '#475569';
+
+  const activeRegions = {
+    Pecho:   ['chest-l', 'chest-r'],
+    Espalda: ['back-l', 'back-r'],
+    Pierna:  ['thigh-l', 'thigh-r', 'calf-l', 'calf-r'],
+    Hombro:  ['sh-l', 'sh-r'],
+    Brazos:  ['arm-l', 'arm-r', 'fore-l', 'fore-r'],
+    Abs:     ['abs'],
+    Cardio:  ['chest-l', 'chest-r', 'abs', 'thigh-l', 'thigh-r'],
+  }[muscle] || [];
+
+  const c = (id) => activeRegions.includes(id) ? color : dim;
+  const o = (id) => activeRegions.includes(id) ? 1 : 0.3;
+  const glow = (id) => activeRegions.includes(id) ? 'url(#glow)' : undefined;
+  const isBack = muscle === 'Espalda';
+
+  return (
+    <svg width="140" height="290" viewBox="0 0 140 290" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      {/* Head */}
+      <ellipse cx="70" cy="22" rx="18" ry="20" fill={head} opacity="0.6"/>
+      <rect x="64" y="40" width="12" height="10" rx="4" fill={head} opacity="0.5"/>
+
+      {/* Shoulders */}
+      <ellipse cx="32" cy="68" rx="22" ry="13" fill={c('sh-l')} opacity={o('sh-l')} filter={glow('sh-l')}/>
+      <ellipse cx="108" cy="68" rx="22" ry="13" fill={c('sh-r')} opacity={o('sh-r')} filter={glow('sh-r')}/>
+
+      {/* Chest / Back */}
+      {isBack ? (
+        <>
+          <path d="M37 57 Q70 52 103 57 L100 98 Q70 104 40 98 Z"
+            fill="none" stroke={color} strokeWidth="3" strokeDasharray="6 3" opacity="0.4"/>
+          <path d="M37 57 Q70 52 103 57 L100 98 Q70 104 40 98 Z"
+            fill={c('back-l')} opacity={o('back-l') * 0.6} filter={glow('back-l')}/>
+          <path d="M37 57 Q70 52 103 57 L100 98 Q70 104 40 98 Z"
+            fill={c('back-r')} opacity={o('back-r') * 0.6} filter={glow('back-r')}/>
+          {/* Lat lines */}
+          <path d="M40 62 Q55 85 45 100" stroke={color} strokeWidth="2.5" fill="none" opacity="0.9" filter={glow('back-l')}/>
+          <path d="M100 62 Q85 85 95 100" stroke={color} strokeWidth="2.5" fill="none" opacity="0.9" filter={glow('back-r')}/>
+        </>
+      ) : (
+        <>
+          <path d="M38 57 Q70 52 102 57 L99 98 Q70 104 41 98 Z"
+            fill={c('chest-l')} opacity={o('chest-l')} filter={glow('chest-l')}/>
+        </>
+      )}
+
+      {/* Abs */}
+      <rect x="43" y="100" width="54" height="52" rx="10" fill={c('abs')} opacity={o('abs')} filter={glow('abs')}/>
+      {activeRegions.includes('abs') && (
+        <>
+          <line x1="70" y1="100" x2="70" y2="152" stroke="#000" strokeWidth="1.5" opacity="0.3"/>
+          <line x1="43" y1="118" x2="97" y2="118" stroke="#000" strokeWidth="1" opacity="0.2"/>
+          <line x1="43" y1="134" x2="97" y2="134" stroke="#000" strokeWidth="1" opacity="0.2"/>
+        </>
+      )}
+
+      {/* Hips */}
+      <ellipse cx="70" cy="157" rx="35" ry="12" fill={dim} opacity="0.25"/>
+
+      {/* Upper arms */}
+      <rect x="11" y="60" width="19" height="60" rx="9.5" fill={c('arm-l')} opacity={o('arm-l')} filter={glow('arm-l')}/>
+      <rect x="110" y="60" width="19" height="60" rx="9.5" fill={c('arm-r')} opacity={o('arm-r')} filter={glow('arm-r')}/>
+
+      {/* Forearms */}
+      <rect x="9" y="122" width="17" height="48" rx="8.5" fill={c('fore-l')} opacity={o('fore-l') * 0.85} filter={glow('fore-l')}/>
+      <rect x="114" y="122" width="17" height="48" rx="8.5" fill={c('fore-r')} opacity={o('fore-r') * 0.85} filter={glow('fore-r')}/>
+
+      {/* Thighs */}
+      <rect x="37" y="166" width="27" height="68" rx="13.5" fill={c('thigh-l')} opacity={o('thigh-l')} filter={glow('thigh-l')}/>
+      <rect x="76" y="166" width="27" height="68" rx="13.5" fill={c('thigh-r')} opacity={o('thigh-r')} filter={glow('thigh-r')}/>
+
+      {/* Calves */}
+      <rect x="39" y="237" width="23" height="43" rx="11.5" fill={c('calf-l')} opacity={o('calf-l') * 0.85} filter={glow('calf-l')}/>
+      <rect x="78" y="237" width="23" height="43" rx="11.5" fill={c('calf-r')} opacity={o('calf-r') * 0.85} filter={glow('calf-r')}/>
+    </svg>
+  );
+};
+
+// --- Modal de Anatomía ---
+const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName }) => {
+  if (!exerciseId) return null;
+
+  let exInfo = EXERCISE_CATALOG.find(e => e.id === exerciseId);
+  if (!exInfo) exInfo = EXERCISE_CATALOG.find(e => e.name === exerciseId);
+  const muscle = exInfo?.muscle || 'Cardio';
+  const exName = getExName(exerciseId);
+
+  const muscleColor = {
+    Pecho: '#ef4444', Espalda: '#3b82f6', Pierna: '#f97316',
+    Hombro: '#eab308', Brazos: '#a855f7', Abs: '#10b981', Cardio: '#ec4899'
+  }[muscle] || '#64748b';
+
+  const isBack = muscle === 'Espalda';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xs bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="relative p-5 pb-3">
+          <div className="absolute top-0 left-0 right-0 h-1" style={{background: `linear-gradient(to right, ${muscleColor}, ${muscleColor}88)`}}/>
+          <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white"><X size={20}/></button>
+          <div className="flex items-center gap-3 mt-1">
+            <div className="p-2.5 rounded-xl" style={{backgroundColor: `${muscleColor}20`}}>
+              <MuscleIcon muscle={muscle} className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-black text-white text-lg leading-tight">{exName}</h3>
+              <p className="text-sm font-bold" style={{color: muscleColor}}>{getMuscleName(muscle)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Diagram */}
+        <div className="flex justify-center items-center py-4 bg-slate-950/40">
+          <BodyDiagramSVG muscle={muscle} color={muscleColor} />
+        </div>
+
+        {/* Footer label */}
+        <div className="px-5 py-3 text-center">
+          <p className="text-xs text-slate-500 font-medium">
+            {isBack ? '← Back muscles targeted' : 'Front view · highlighted muscle group'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'es');
   const t = (key) => TRANSLATIONS[lang][key] || key;
@@ -653,8 +802,8 @@ export default function App() {
 
   const openImageSearch = (e, exName) => {
     e.stopPropagation();
-    const query = encodeURIComponent(`${exName} exercise machine`);
-    window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+    const query = encodeURIComponent(`${exName} exercise outline diagram line drawing`);
+    window.open(`https://www.google.com/search?tbm=isch&q=${query}&tbs=itp:lineart`, '_blank');
   };
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -674,6 +823,7 @@ export default function App() {
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [achievements, setAchievements] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
+  const [anatomyExercise, setAnatomyExercise] = useState(null);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -1069,21 +1219,28 @@ export default function App() {
                    </div>
                    
                    <div className="flex items-center gap-1">
-                     <button 
+                     <button
                        onClick={(e) => openVideoSearch(e, getExName(ex.id))}
                        className="p-3 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                        title={t('watch_tutorial')}
                      >
-                       <Youtube size={24} />
+                       <Youtube size={22} />
                      </button>
-                     <button 
+                     <button
                        onClick={(e) => openImageSearch(e, getExName(ex.id))}
                        className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                        title={t('view_images')}
                      >
-                       <Image size={24} />
+                       <Image size={22} />
                      </button>
-                     
+                     <button
+                       onClick={(e) => { e.stopPropagation(); setAnatomyExercise(ex.id); }}
+                       className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                       title={t('view_anatomy')}
+                     >
+                       <Camera size={22} />
+                     </button>
+
                      {isSelected && <div className="bg-blue-500 rounded-full p-1 ml-1"><Check size={14} className="text-white" /></div>}
                    </div>
                  </div>
@@ -1171,8 +1328,8 @@ export default function App() {
     const isCardio = exInfo?.muscle === 'Cardio';
 
     return (
-      <div className="flex flex-col h-full animate-in slide-in-from-bottom pb-24">
-        <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur">
+      <div className="flex flex-col h-full animate-in slide-in-from-bottom">
+        <div className="flex justify-between items-center mb-4 bg-slate-900/50 p-2 rounded-xl backdrop-blur shrink-0">
           <div className="flex items-center gap-2 px-2">
              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
              <span className="text-sm font-bold text-white">{activeWorkout.routineName}</span>
@@ -1180,7 +1337,7 @@ export default function App() {
           <button onClick={handleCancelWorkout} className="p-2 text-slate-400 hover:text-red-400"><X size={20}/></button>
         </div>
 
-        <div className="flex overflow-x-auto pb-4 gap-2 mb-2 scrollbar-hide">
+        <div className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
           {routine.exercises.map(ex => {
             const active = selectedExercise === ex;
             const count = (activeWorkout.logs[ex] || []).length;
@@ -1203,28 +1360,35 @@ export default function App() {
           })}
         </div>
 
-        <Card className="p-6 mb-6 border border-slate-700 bg-slate-800 relative overflow-hidden">
+        <Card className="p-5 mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-          
+
           {/* Header con Nombre y Botones de Ayuda */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-white tracking-tight leading-tight max-w-[70%]">
+          <div className="flex items-center justify-between mb-5 gap-3">
+            <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
               {getExName(selectedExercise)}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 shrink-0">
               <button
                 onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
                 className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
                 title={t('watch_tutorial')}
               >
-                <Youtube size={24} fill="currentColor" />
+                <Youtube size={20} fill="currentColor" />
               </button>
               <button
                 onClick={(e) => openImageSearch(e, getExName(selectedExercise))}
                 className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
                 title={t('view_images')}
               >
-                <Image size={24} />
+                <Image size={20} />
+              </button>
+              <button
+                onClick={() => setAnatomyExercise(selectedExercise)}
+                className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
+                title={t('view_anatomy')}
+              >
+                <Camera size={20} />
               </button>
             </div>
           </div>
@@ -1258,7 +1422,7 @@ export default function App() {
           </form>
         </Card>
 
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
           <div className="flex items-center justify-between px-2 mb-2">
              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
              <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
@@ -1282,7 +1446,7 @@ export default function App() {
           })}
         </div>
 
-        <div className="fixed bottom-24 left-4 right-4 z-20">
+        <div className="pt-3 pb-2 shrink-0">
           <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
             {t('finish_workout')}
           </Button>
@@ -1342,7 +1506,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-24 overflow-y-auto scrollbar-hide">
+        <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${activeTab === 'workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'routines' && <RoutinesView />}
           {activeTab === 'workout' && <ActiveWorkoutView />}
@@ -1371,6 +1535,13 @@ export default function App() {
           </nav>
         )}
         
+        <AnatomyModal
+          exerciseId={anatomyExercise}
+          onClose={() => setAnatomyExercise(null)}
+          t={t}
+          getExName={getExName}
+          getMuscleName={getMuscleName}
+        />
         <CelebrationModal achievements={achievements} onClose={() => setAchievements([])} t={t} />
         <ConfirmationModal 
           isOpen={confirmModal.isOpen} 
