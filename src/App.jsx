@@ -35,7 +35,8 @@ import {
   Zap,
   GripVertical,
   QrCode,
-  ScanLine
+  ScanLine,
+  ListFilter
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import QrScanner from 'qr-scanner';
@@ -48,16 +49,20 @@ import {
   verticalListSortingStrategy, useSortable, arrayMove
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   LineChart,
-  Line
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 
 // --- SISTEMA DE TRADUCCIÓN ---
@@ -118,6 +123,11 @@ const TRANSLATIONS = {
     import_confirm: '¿Agregar esta rutina a tu lista?',
     reorder_exercises: 'Reordenar',
     selected: 'Seleccionados',
+    all: 'Todos',
+    chart_volume: 'Volumen', chart_duration: 'Duración', chart_sets: 'Series',
+    chart_freq: 'Frecuencia', chart_muscle: 'Por Músculo',
+    avg_duration: 'Dur. Promedio', streak: 'Racha', fav_exercise: 'Ejercicio Fav.',
+    total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem',
     tab_exercises: 'Ejercicios',
     no_exercises_selected: 'Sin ejercicios seleccionados',
     camera_error: 'No se pudo acceder a la cámara',
@@ -284,6 +294,11 @@ const TRANSLATIONS = {
     import_confirm: 'Add this routine to your list?',
     reorder_exercises: 'Reorder',
     selected: 'Selected',
+    all: 'All',
+    chart_volume: 'Volume', chart_duration: 'Duration', chart_sets: 'Sets',
+    chart_freq: 'Frequency', chart_muscle: 'Muscle Split',
+    avg_duration: 'Avg. Duration', streak: 'Streak', fav_exercise: 'Top Exercise',
+    total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks',
     tab_exercises: 'Exercises',
     no_exercises_selected: 'No exercises selected',
     camera_error: 'Could not access camera',
@@ -450,6 +465,11 @@ const TRANSLATIONS = {
     import_confirm: 'Ajouter cette routine?',
     reorder_exercises: 'Réordonner',
     selected: 'Sélectionnés',
+    all: 'Tous',
+    chart_volume: 'Volume', chart_duration: 'Durée', chart_sets: 'Séries',
+    chart_freq: 'Fréquence', chart_muscle: 'Par Muscle',
+    avg_duration: 'Durée Moy.', streak: 'Série', fav_exercise: 'Exercice Fav.',
+    total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem',
     tab_exercises: 'Exercices',
     no_exercises_selected: 'Aucun exercice sélectionné',
     camera_error: 'Caméra inaccessible',
@@ -560,6 +580,11 @@ const TRANSLATIONS = {
       ab_wheel: 'Roue Abdominale'
     }
   }
+};
+
+const MUSCLE_COLORS = {
+  Pecho: '#3b82f6', Espalda: '#10b981', Pierna: '#f59e0b',
+  Hombro: '#8b5cf6', Brazos: '#ef4444', Abs: '#06b6d4', Cardio: '#f97316'
 };
 
 // --- Componentes UI Básicos ---
@@ -1058,6 +1083,8 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
   const [name, setName] = useState(initialName);
   const [selectedExercises, setSelectedExercises] = useState(initialExercises);
   const [searchTerm, setSearchTerm] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState('all');
+  const [showMuscleFilter, setShowMuscleFilter] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customMuscle, setCustomMuscle] = useState('Pecho');
@@ -1075,7 +1102,11 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
   const filteredExercises = exercises.filter(ex => {
     const exName = t('ex_names')[ex.id] || ex.name;
     const muscle = t('muscles')[ex.muscle] || ex.muscle;
-    return exName.toLowerCase().includes(searchTerm.toLowerCase()) || muscle.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm ||
+      exName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      muscle.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMuscle = muscleFilter === 'all' || ex.muscle === muscleFilter;
+    return matchesSearch && matchesMuscle;
   });
 
   const filteredSelected = selectedExercises.filter(exId =>
@@ -1106,12 +1137,40 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
         <div className="relative">
           <Search className="absolute left-4 top-3.5 text-slate-500" size={18} />
           <input
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white outline-none text-sm"
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-12 py-3 text-white outline-none text-sm"
             placeholder={t('search_placeholder')}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
           />
+          <button
+            onClick={() => setShowMuscleFilter(v => !v)}
+            className={`absolute right-3 top-2.5 p-1.5 rounded-lg transition-colors ${
+              showMuscleFilter || muscleFilter !== 'all'
+                ? 'text-blue-400 bg-blue-500/20'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <ListFilter size={18} />
+          </button>
         </div>
+
+        {showMuscleFilter && (
+          <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
+            {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+              <button
+                key={m}
+                onClick={() => setMuscleFilter(m)}
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  muscleFilter === m
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
+                }`}
+              >
+                {m === 'all' ? t('all') : (t('muscles')[m] || m)}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tab toggle */}
@@ -1355,6 +1414,8 @@ export default function App() {
   const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
   const [showWorkoutPicker, setShowWorkoutPicker] = useState(false);
   const [workoutPickerSearch, setWorkoutPickerSearch] = useState('');
+  const [workoutPickerMuscle, setWorkoutPickerMuscle] = useState('all');
+  const [showWorkoutPickerFilter, setShowWorkoutPickerFilter] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
 
   // QR & reorder state
@@ -1362,6 +1423,7 @@ export default function App() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [pendingImport, setPendingImport] = useState(null); // null | { name, exercises }
   const [showExerciseReorder, setShowExerciseReorder] = useState(false);
+  const [chartRange, setChartRange] = useState('1M');
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -1454,7 +1516,7 @@ export default function App() {
   // --- Lógica de Stats ---
   const stats = useMemo(() => {
     const now = new Date();
-    const currentDay = now.getDay(); 
+    const currentDay = now.getDay();
     const diff = now.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     monday.setHours(0,0,0,0);
@@ -1468,7 +1530,7 @@ export default function App() {
 
     const startOfWeek = weekDays[0].getTime();
     const endOfWeek = new Date(weekDays[6]).setHours(23,59,59,999);
-    
+
     const thisWeekSessions = history.filter(s => {
       const sDate = new Date(s.date).getTime();
       return sDate >= startOfWeek && sDate <= endOfWeek;
@@ -1484,24 +1546,100 @@ export default function App() {
       return acc + sets;
     }, 0);
 
-    const volumeData = history.slice(-7).map(session => {
-       let volume = 0;
-       Object.entries(session.logs).forEach(([exId, exLogs]) => {
-         let catInfo = EXERCISE_CATALOG.find(c => c.id === exId);
-         if (!catInfo) catInfo = EXERCISE_CATALOG.find(c => c.name === exId); 
+    // Range-filtered history
+    const rangeDays = { '1W': 7, '1M': 30, '6M': 180, '1Y': 365 };
+    const cutoff = new Date(Date.now() - rangeDays[chartRange] * 86400000);
+    const rangedHistory = history.filter(s => new Date(s.date) >= cutoff);
 
-         if (catInfo && catInfo.muscle === 'Cardio') return;
-         exLogs.forEach(set => volume += (parseFloat(set.weight) * parseFloat(set.reps)));
-       });
-       return {
-         date: new Date(session.date).toLocaleDateString(lang === 'es' ? 'es-MX' : lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short', day: 'numeric' }),
-         volumen: Math.round(volume),
-         name: session.routineName
-       };
+    const localeStr = lang === 'es' ? 'es-MX' : lang === 'fr' ? 'fr-FR' : 'en-US';
+
+    const volumeData = rangedHistory.map(session => {
+      let volume = 0;
+      Object.entries(session.logs).forEach(([exId, exLogs]) => {
+        let catInfo = EXERCISE_CATALOG.find(c => c.id === exId) || EXERCISE_CATALOG.find(c => c.name === exId);
+        if (catInfo && catInfo.muscle === 'Cardio') return;
+        exLogs.forEach(set => volume += (parseFloat(set.weight)||0) * (parseFloat(set.reps)||0));
+      });
+      return {
+        date: new Date(session.date).toLocaleDateString(localeStr, { day: 'numeric', month: 'short' }),
+        volumen: Math.round(volume)
+      };
     });
 
-    return { totalWorkouts, totalSets, volumeData, uniqueDaysCount, weekDays, uniqueDaysSet };
-  }, [history, lang]);
+    const durationData = rangedHistory.map(s => ({
+      date: new Date(s.date).toLocaleDateString(localeStr, { day: 'numeric', month: 'short' }),
+      duration: s.duration || 0
+    }));
+
+    const setsData = rangedHistory.map(s => ({
+      date: new Date(s.date).toLocaleDateString(localeStr, { day: 'numeric', month: 'short' }),
+      sets: Object.values(s.logs).reduce((acc, arr) => acc + arr.length, 0)
+    }));
+
+    const weekMap = {};
+    rangedHistory.forEach(s => {
+      const d = new Date(s.date);
+      const day = d.getDay();
+      const mon = new Date(d);
+      mon.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      mon.setHours(0,0,0,0);
+      const key = mon.toLocaleDateString(localeStr, { day: 'numeric', month: 'short' });
+      weekMap[key] = (weekMap[key] || 0) + 1;
+    });
+    const freqData = Object.entries(weekMap).map(([week, count]) => ({ week, count }));
+
+    const muscleCount = {};
+    rangedHistory.forEach(s => {
+      Object.entries(s.logs).forEach(([exId, exLogs]) => {
+        const ex = [...EXERCISE_CATALOG, ...customExercises].find(e => e.id === exId || e.name === exId);
+        if (ex) muscleCount[ex.muscle] = (muscleCount[ex.muscle] || 0) + exLogs.length;
+      });
+    });
+    const muscleData = Object.entries(muscleCount)
+      .map(([key, value]) => ({ name: key, label: TRANSLATIONS[lang]?.muscles?.[key] || key, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // All-time stats
+    const avgDuration = history.length > 0
+      ? Math.round(history.reduce((sum, s) => sum + (s.duration || 0), 0) / history.length)
+      : 0;
+
+    const totalMinutes = history.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalHoursStr = totalMinutes < 60
+      ? `${totalMinutes} min`
+      : `${(totalMinutes / 60).toFixed(1)}h`;
+
+    const setsPerEx = {};
+    history.forEach(s => Object.entries(s.logs).forEach(([id, arr]) => {
+      setsPerEx[id] = (setsPerEx[id] || 0) + arr.length;
+    }));
+    const favExId = Object.entries(setsPerEx).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+    // Current streak: consecutive weeks meeting weeklyGoal
+    let streak = 0;
+    let checkMon = new Date(monday);
+    for (let i = 0; i < 52; i++) {
+      const wEnd = new Date(checkMon);
+      wEnd.setDate(checkMon.getDate() + 6);
+      wEnd.setHours(23,59,59,999);
+      const wSessions = history.filter(s => {
+        const d = new Date(s.date).getTime();
+        return d >= checkMon.getTime() && d <= wEnd.getTime();
+      });
+      const uniqueDaysW = new Set(wSessions.map(s => new Date(s.date).toDateString())).size;
+      if (uniqueDaysW >= weeklyGoal) {
+        streak++;
+        checkMon = new Date(checkMon);
+        checkMon.setDate(checkMon.getDate() - 7);
+      } else break;
+    }
+
+    return {
+      totalWorkouts, totalSets, volumeData, uniqueDaysCount, weekDays, uniqueDaysSet,
+      durationData, setsData, freqData, muscleData,
+      avgDuration, totalHoursStr, favExId, streak
+    };
+  }, [history, lang, weeklyGoal, chartRange, customExercises]);
 
   const handleStartWorkout = (routine) => {
     setActiveWorkout({
@@ -1739,22 +1877,153 @@ export default function App() {
           </div>
           <p className="text-3xl font-black text-white">{stats.totalSets}</p>
         </Card>
+        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="flex items-center gap-2 mb-2 text-slate-400">
+            <Clock size={18} />
+            <span className="text-xs font-bold uppercase">{t('avg_duration')}</span>
+          </div>
+          <p className="text-3xl font-black text-white">{stats.avgDuration}<span className="text-sm text-slate-400 ml-1">min</span></p>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="flex items-center gap-2 mb-2 text-slate-400">
+            <Clock size={18} />
+            <span className="text-xs font-bold uppercase">{t('total_time')}</span>
+          </div>
+          <p className="text-3xl font-black text-white">{stats.totalHoursStr}</p>
+        </Card>
       </div>
-      
+
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="flex items-center gap-2 mb-2 text-slate-400">
+            <Trophy size={18} />
+            <span className="text-xs font-bold uppercase">{t('streak')}</span>
+          </div>
+          <p className="text-3xl font-black text-white">{stats.streak}<span className="text-sm text-slate-400 ml-1">{t('weeks_label')}</span></p>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="flex items-center gap-2 mb-2 text-slate-400">
+            <Dumbbell size={18} />
+            <span className="text-xs font-bold uppercase">{t('fav_exercise')}</span>
+          </div>
+          <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
+        </Card>
+      </div>
+
       <Card className="p-5">
-        <h3 className="font-bold text-lg text-white mb-4 flex items-center gap-2">
-           <TrendingUp className="text-emerald-400" size={20}/> {t('progress')}
-        </h3>
-        <div className="h-48 w-full">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-lg text-white flex items-center gap-2">
+            <TrendingUp className="text-emerald-400" size={20}/> {t('progress')}
+          </h3>
+          <div className="flex gap-1">
+            {['1W','1M','6M','1Y'].map(r => (
+              <button key={r} onClick={() => setChartRange(r)}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
+                  chartRange === r ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
+                }`}>{r}</button>
+            ))}
+          </div>
+        </div>
+
+        {(() => {
+          const ChartSlide = ({ title, children }) => (
+            <div className="w-full shrink-0 snap-center">
+              <p className="text-xs font-bold text-slate-400 uppercase mb-2">{title}</p>
+              <div className="h-44">{children}</div>
+            </div>
+          );
+
+          const tooltipStyle = { backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' };
+
+          const VolumeChart = () => (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.volumeData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
                 <Line type="monotone" dataKey="volumen" stroke="#3b82f6" strokeWidth={3} dot={{r:3}} />
               </LineChart>
             </ResponsiveContainer>
-        </div>
+          );
+
+          const DurationChart = () => (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.durationData} barSize={12}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="duration" fill="#8b5cf6" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          );
+
+          const SetsChart = () => (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.setsData} barSize={12}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="date" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="sets" fill="#10b981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          );
+
+          const FreqChart = () => (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stats.freqData} barSize={12}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="week" stroke="#64748b" fontSize={9} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="count" fill="#f59e0b" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          );
+
+          const MuscleChart = () => (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={stats.muscleData} dataKey="value" nameKey="label"
+                     cx="50%" cy="50%" outerRadius={65} innerRadius={35}>
+                  {stats.muscleData.map((entry) => (
+                    <Cell key={entry.name} fill={MUSCLE_COLORS[entry.name] || '#64748b'} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={tooltipStyle}
+                         formatter={(v, n) => [v + ' sets', n]} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          );
+
+          return (
+            <>
+              {/* Mobile: horizontal scroll-snap */}
+              <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar md:hidden">
+                <ChartSlide title={t('chart_volume')}><VolumeChart /></ChartSlide>
+                <ChartSlide title={t('chart_duration')}><DurationChart /></ChartSlide>
+                <ChartSlide title={t('chart_sets')}><SetsChart /></ChartSlide>
+                <ChartSlide title={t('chart_freq')}><FreqChart /></ChartSlide>
+                <ChartSlide title={t('chart_muscle')}><MuscleChart /></ChartSlide>
+              </div>
+
+              {/* Desktop: 2-column grid */}
+              <div className="hidden md:grid md:grid-cols-2 gap-4">
+                {[
+                  { title: t('chart_volume'), C: VolumeChart },
+                  { title: t('chart_duration'), C: DurationChart },
+                  { title: t('chart_sets'), C: SetsChart },
+                  { title: t('chart_freq'), C: FreqChart },
+                  { title: t('chart_muscle'), C: MuscleChart },
+                ].map(({ title, C }) => (
+                  <div key={title}>
+                    <p className="text-xs font-bold text-slate-400 uppercase mb-2">{title}</p>
+                    <div className="h-40"><C /></div>
+                  </div>
+                ))}
+              </div>
+            </>
+          );
+        })()}
       </Card>
     </div>
   );
@@ -1833,6 +2102,15 @@ export default function App() {
     const setSelectedExercise = setWorkoutSelectedExercise;
     const [weight, setWeight] = useState('');
     const [reps, setReps] = useState('');
+    const pillContainerRef = useRef(null);
+    useEffect(() => {
+      if (pillContainerRef.current) {
+        const activeEl = pillContainerRef.current.querySelector('[data-active="true"]');
+        if (activeEl) {
+          activeEl.scrollIntoView({ behavior: 'instant', inline: 'nearest', block: 'nearest' });
+        }
+      }
+    });
 
     useEffect(() => {
       const logs = activeWorkout.logs[selectedExercise];
@@ -1876,14 +2154,14 @@ export default function App() {
         )}
 
         {/* Exercise pills — full width */}
-        <div className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
+        <div ref={pillContainerRef} className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
           {routine.exercises.map(ex => {
             const active = selectedExercise === ex;
             const count = (activeWorkout.logs[ex] || []).length;
             let info = allExercises.find(e => e.id === ex);
             if (!info) info = allExercises.find(e => e.name === ex);
             return (
-              <button key={ex} onClick={() => setSelectedExercise(ex)}
+              <button key={ex} data-active={active ? "true" : "false"} onClick={() => setSelectedExercise(ex)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
               >
                 {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
@@ -2053,17 +2331,46 @@ export default function App() {
             <div className="bg-slate-900 border-t border-slate-700 rounded-t-3xl max-h-[75vh] flex flex-col">
               <div className="flex items-center justify-between p-4 border-b border-slate-800">
                 <h3 className="font-bold text-white">{t('add_exercise')}</h3>
-                <button onClick={() => setShowWorkoutPicker(false)}><X size={20} className="text-slate-400" /></button>
+                <button onClick={() => { setShowWorkoutPicker(false); setWorkoutPickerMuscle('all'); setShowWorkoutPickerFilter(false); }}><X size={20} className="text-slate-400" /></button>
               </div>
-              <div className="relative px-4 py-3">
-                <Search className="absolute left-7 top-5.5 text-slate-500" size={16} />
-                <input
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-white outline-none text-sm"
-                  placeholder={t('search_placeholder')}
-                  value={workoutPickerSearch}
-                  onChange={e => setWorkoutPickerSearch(e.target.value)}
-                  autoFocus
-                />
+              <div className="px-4 pt-3 pb-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                  <input
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-white outline-none text-sm"
+                    placeholder={t('search_placeholder')}
+                    value={workoutPickerSearch}
+                    onChange={e => setWorkoutPickerSearch(e.target.value)}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => setShowWorkoutPickerFilter(v => !v)}
+                    className={`absolute right-2 top-1.5 p-1.5 rounded-lg transition-colors ${
+                      showWorkoutPickerFilter || workoutPickerMuscle !== 'all'
+                        ? 'text-blue-400 bg-blue-500/20'
+                        : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <ListFilter size={16} />
+                  </button>
+                </div>
+                {showWorkoutPickerFilter && (
+                  <div className="flex gap-2 overflow-x-auto pt-2 pb-1 no-scrollbar">
+                    {['all', 'Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+                      <button
+                        key={m}
+                        onClick={() => setWorkoutPickerMuscle(m)}
+                        className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                          workoutPickerMuscle === m
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-500'
+                        }`}
+                      >
+                        {m === 'all' ? t('all') : (t('muscles')[m] || m)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-2">
                 {allExercises
@@ -2071,8 +2378,11 @@ export default function App() {
                   .filter(ex => {
                     const name = t('ex_names')[ex.id] || ex.name;
                     const muscle = t('muscles')[ex.muscle] || ex.muscle;
-                    return name.toLowerCase().includes(workoutPickerSearch.toLowerCase())
-                      || muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
+                    const matchesSearch = !workoutPickerSearch ||
+                      name.toLowerCase().includes(workoutPickerSearch.toLowerCase()) ||
+                      muscle.toLowerCase().includes(workoutPickerSearch.toLowerCase());
+                    const matchesMuscle = workoutPickerMuscle === 'all' || ex.muscle === workoutPickerMuscle;
+                    return matchesSearch && matchesMuscle;
                   })
                   .map(ex => (
                     <div key={ex.id}
