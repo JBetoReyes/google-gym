@@ -14,6 +14,7 @@ import {
   History,
   TrendingUp,
   Clock,
+  Timer,
   Search,
   X,
   Check,
@@ -2050,8 +2051,7 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
             {restSeconds !== null && (
               <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mt-3 animate-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 text-blue-400 font-mono font-bold text-lg">
-                  <Clock size={18} />
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">{t('rest_timer')}</span>
+                  <Timer size={18} />
                   {Math.floor(restSeconds / 60)}:{String(restSeconds % 60).padStart(2, '0')}
                 </div>
                 <div className="flex-1 mx-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
