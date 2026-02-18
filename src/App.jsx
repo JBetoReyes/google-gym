@@ -1111,10 +1111,16 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
         </DndContext>
 
         {/* Footer */}
-        <div className="px-6 pt-4 pb-8 border-t border-slate-800 shrink-0">
+        <div className="px-6 pt-4 pb-8 border-t border-slate-800 shrink-0 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-lg transition-all active:scale-[0.98]"
+          >
+            {t('cancel')}
+          </button>
           <button
             onClick={() => onSave(order)}
-            className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-all active:scale-[0.98] shadow-lg shadow-blue-900/30"
+            className="flex-1 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg transition-all active:scale-[0.98] shadow-lg shadow-blue-900/30"
           >
             {t('save_routine')}
           </button>
@@ -1789,34 +1795,40 @@ const SetsChart = React.memo(function SetsChart({ data }) {
 const GoalRingChart = React.memo(function GoalRingChart({ sessionsThisWeek, weeklyGoal, t }) {
   const pct = Math.min(sessionsThisWeek / Math.max(weeklyGoal, 1), 1);
   const color = pct >= 1 ? '#10b981' : '#3b82f6';
-  const size = 148;
-  const strokeWidth = 18;
-  const r = (size - strokeWidth) / 2;
-  const cx = size / 2;
-  const cy = size / 2;
+  const r = 38;
   const circumference = 2 * Math.PI * r;
   const dash = circumference * pct;
   const gap = circumference - dash;
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1e293b" strokeWidth={strokeWidth} />
+      {/* aspectRatio:1 keeps it square; height:100% fills the chart slot */}
+      <div style={{ height: '100%', aspectRatio: '1', maxWidth: '100%' }}>
+        <svg viewBox="0 0 100 100" width="100%" height="100%">
+          {/* Track */}
+          <circle cx="50" cy="50" r={r} fill="none" stroke="#1e293b" strokeWidth="10"
+            transform="rotate(-90 50 50)" />
+          {/* Progress arc */}
           <circle
-            cx={cx} cy={cy} r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
+            cx="50" cy="50" r={r}
+            fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
             strokeDasharray={`${dash} ${gap}`}
+            transform="rotate(-90 50 50)"
             style={{ transition: 'stroke-dasharray 0.6s ease' }}
           />
+          {/* Center text — SVG units scale with viewBox */}
+          <text x="50" y="44" textAnchor="middle" dominantBaseline="middle"
+            fill="white" fontSize="20" fontWeight="900" fontFamily="inherit">
+            {sessionsThisWeek}
+          </text>
+          <text x="50" y="58" textAnchor="middle" dominantBaseline="middle"
+            fill="#94a3b8" fontSize="8" fontFamily="inherit">
+            / {weeklyGoal} {t('sessions_label')}
+          </text>
+          <text x="50" y="69" textAnchor="middle" dominantBaseline="middle"
+            fill={color} fontSize="7" fontWeight="700" fontFamily="inherit">
+            {t('this_week')}
+          </text>
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-          <span className="text-3xl font-black text-white leading-none">{sessionsThisWeek}</span>
-          <span className="text-[11px] text-slate-400 leading-none">/ {weeklyGoal} {t('sessions_label')}</span>
-          <span className="text-[10px] font-bold leading-none mt-1" style={{ color }}>{t('this_week')}</span>
-        </div>
       </div>
     </div>
   );
