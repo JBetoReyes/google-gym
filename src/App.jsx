@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   Dumbbell, 
@@ -1075,23 +1076,16 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
   const [order, setOrder] = useState(exercises);
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 rounded-t-3xl flex flex-col max-h-[85vh]">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex flex-col justify-end bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-slate-900 rounded-t-2xl flex flex-col max-h-[75vh]">
 
-        {/* Drag-handle pill */}
-        <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-8 h-1 rounded-full bg-slate-700" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800 shrink-0">
-          <div>
-            <h3 className="text-base font-bold text-white">{t('reorder_exercises')}</h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">{t('drag_to_reorder')}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-800 transition-colors">
-            <X size={18} className="text-slate-400" />
+        {/* Compact single-row header: pill + title + X */}
+        <div className="flex items-center gap-3 px-5 pt-3 pb-2.5 border-b border-slate-800 shrink-0">
+          <div className="w-6 h-1 rounded-full bg-slate-600 shrink-0" />
+          <span className="flex-1 font-bold text-white text-sm">{t('reorder_exercises')}</span>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-800 transition-colors shrink-0">
+            <X size={16} className="text-slate-400" />
           </button>
         </div>
 
@@ -1102,7 +1096,7 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
               setOrder(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)));
           }}>
           <SortableContext items={order} strategy={verticalListSortingStrategy}>
-            <div className="flex-1 overflow-y-auto min-h-0 px-5 py-3 space-y-2">
+            <div className="flex-1 overflow-y-auto min-h-0 px-4 py-2 space-y-1.5">
               {order.map((exId, i) => (
                 <SortableReorderItem key={exId} id={exId} index={i + 1} label={getExName(exId)} />
               ))}
@@ -1110,8 +1104,8 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
           </SortableContext>
         </DndContext>
 
-        {/* Footer */}
-        <div className="px-5 pt-3 pb-6 border-t border-slate-800 shrink-0 flex gap-3">
+        {/* Footer pinned at bottom of panel */}
+        <div className="px-4 pt-2.5 pb-8 border-t border-slate-800 shrink-0 flex gap-3">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-all active:scale-[0.98]"
@@ -1126,7 +1120,8 @@ function ExerciseReorderModal({ exercises, getExName, t, onSave, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
