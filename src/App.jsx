@@ -832,6 +832,15 @@ export default function App() {
   const [achievements, setAchievements] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [anatomyExercise, setAnatomyExercise] = useState(null);
+
+  // RoutinesView state lifted to avoid remount when App re-renders
+  const [isCreating, setIsCreating] = useState(false);
+  const [newRoutineName, setNewRoutineName] = useState('');
+  const [newRoutineExercises, setNewRoutineExercises] = useState([]);
+  const [newRoutineSearch, setNewRoutineSearch] = useState('');
+
+  // ActiveWorkoutView state lifted to avoid remount when App re-renders
+  const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
   
   // Estado para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({ 
@@ -948,9 +957,10 @@ export default function App() {
       routineId: routine.id,
       routineName: routine.name,
       startTime: new Date().toISOString(),
-      logs: {}, 
+      logs: {},
       currentExerciseIndex: 0
     });
+    setWorkoutSelectedExercise(routine.exercises[0]);
     setActiveTab('workout');
   };
 
@@ -972,12 +982,14 @@ export default function App() {
 
     setHistory([newSession, ...history]);
     setActiveWorkout(null);
+    setWorkoutSelectedExercise(null);
     setActiveTab('dashboard');
   };
 
   const handleCancelWorkout = () => {
     triggerConfirm(t('cancel_workout'), t('cancel_msg'), () => {
       setActiveWorkout(null);
+      setWorkoutSelectedExercise(null);
       setActiveTab('routines');
     });
   };
@@ -1171,19 +1183,14 @@ export default function App() {
   );
 
   const RoutinesView = () => {
-    const [isCreating, setIsCreating] = useState(false);
-    const [newName, setNewName] = useState('');
-    const [selectedExercises, setSelectedExercises] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-
     const toggleSelection = (exId) => {
-      setSelectedExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
+      setNewRoutineExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
     };
 
     const filteredExercises = EXERCISE_CATALOG.filter(ex => {
       const name = t('ex_names')[ex.id] || ex.name;
       const muscle = t('muscles')[ex.muscle] || ex.muscle;
-      return name.toLowerCase().includes(searchTerm.toLowerCase()) || muscle.toLowerCase().includes(searchTerm.toLowerCase());
+      return name.toLowerCase().includes(newRoutineSearch.toLowerCase()) || muscle.toLowerCase().includes(newRoutineSearch.toLowerCase());
     });
 
     if (isCreating) {
@@ -1191,29 +1198,29 @@ export default function App() {
         <div className="flex flex-col h-[calc(100vh-140px)] animate-in slide-in-from-right">
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-4">
-               <button onClick={() => setIsCreating(false)} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft /></button>
+               <button onClick={() => { setIsCreating(false); setNewRoutineName(''); setNewRoutineExercises([]); setNewRoutineSearch(''); }} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft /></button>
                <h3 className="text-xl font-bold text-white">{t('new_routine')}</h3>
             </div>
             <input 
               className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none mb-4 font-bold"
               placeholder={t('name_placeholder')}
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
+              value={newRoutineName}
+              onChange={e => setNewRoutineName(e.target.value)}
             />
             <div className="relative">
               <Search className="absolute left-4 top-3.5 text-slate-500" size={18} />
               <input 
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white outline-none text-sm"
                 placeholder={t('search_placeholder')}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                value={newRoutineSearch}
+                onChange={e => setNewRoutineSearch(e.target.value)}
               />
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto pr-1 space-y-2">
              {filteredExercises.map(ex => {
-               const isSelected = selectedExercises.includes(ex.id);
+               const isSelected = newRoutineExercises.includes(ex.id);
                return (
                  <div 
                    key={ex.id}
@@ -1264,10 +1271,13 @@ export default function App() {
           
           <div className="pt-4 mt-auto border-t border-slate-800">
             <Button className="w-full py-4 text-lg" onClick={() => {
-              addNewRoutine(newName, selectedExercises);
+              addNewRoutine(newRoutineName, newRoutineExercises);
               setIsCreating(false);
-            }} disabled={!newName || selectedExercises.length === 0}>
-              {t('save_routine')} ({selectedExercises.length})
+              setNewRoutineName('');
+              setNewRoutineExercises([]);
+              setNewRoutineSearch('');
+            }} disabled={!newRoutineName || newRoutineExercises.length === 0}>
+              {t('save_routine')} ({newRoutineExercises.length})
             </Button>
           </div>
         </div>
@@ -1308,7 +1318,8 @@ export default function App() {
   const ActiveWorkoutView = () => {
     if (!activeWorkout) return null;
     const routine = routines.find(r => r.id === activeWorkout.routineId) || { exercises: [] };
-    const [selectedExercise, setSelectedExercise] = useState(routine.exercises[0]);
+    const selectedExercise = workoutSelectedExercise ?? routine.exercises[0];
+    const setSelectedExercise = setWorkoutSelectedExercise;
     const [weight, setWeight] = useState('');
     const [reps, setReps] = useState('');
 
