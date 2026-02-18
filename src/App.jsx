@@ -1528,10 +1528,13 @@ export default function App() {
 
   const RoutinesView = () => {
     return (
-      <div className="space-y-4 animate-in fade-in">
-        <Button onClick={() => navigate('/routines/new')} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
-          {t('create_routine')}
-        </Button>
+      <div className="animate-in fade-in">
+        <div className="mb-4">
+          <Button onClick={() => navigate('/routines/new')} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
+            {t('create_routine')}
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {routines.map(routine => (
           <Card key={routine.id} className="p-5 group hover:border-slate-600 transition-colors">
             <div className="flex justify-between items-start mb-4">
@@ -1557,6 +1560,7 @@ export default function App() {
             </Button>
           </Card>
         ))}
+        </div>
       </div>
     );
   };
@@ -1610,156 +1614,158 @@ export default function App() {
           </div>
         )}
 
-        <div className="flex items-center gap-2 mb-3 shrink-0">
-          <div className="flex overflow-x-auto pb-3 gap-2 scrollbar-hide flex-1 min-w-0">
-            {routine.exercises.map(ex => {
-              const active = selectedExercise === ex;
-              const count = (activeWorkout.logs[ex] || []).length;
-              // Buscar info para el icono
-              let info = allExercises.find(e => e.id === ex);
-              if (!info) info = allExercises.find(e => e.name === ex);
-
-              return (
-                <button key={ex} onClick={() => setSelectedExercise(ex)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border
-                    ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}
-                  `}
-                >
-                  {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
-                  {getExName(ex)}
-                  {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
-                </button>
-              )
-            })}
-            <button
-              onClick={() => setShowWorkoutPicker(true)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
-            >
-              <Plus size={18} />
-            </button>
-          </div>
-          {/* Pinned Zap — always visible outside scroll */}
+        {/* Exercise pills — full width */}
+        <div className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
+          {routine.exercises.map(ex => {
+            const active = selectedExercise === ex;
+            const count = (activeWorkout.logs[ex] || []).length;
+            let info = allExercises.find(e => e.id === ex);
+            if (!info) info = allExercises.find(e => e.name === ex);
+            return (
+              <button key={ex} onClick={() => setSelectedExercise(ex)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}`}
+              >
+                {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
+                {getExName(ex)}
+                {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
+              </button>
+            )
+          })}
           <button
-            onClick={() => setFocusMode(prev => !prev)}
-            className={`flex-none flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all active:scale-95 shrink-0 ${
-              focusMode
-                ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/50'
-                : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-white'
-            }`}
-            title={t('focus_mode')}
+            onClick={() => setShowWorkoutPicker(true)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
           >
-            <Zap size={18} />
+            <Plus size={18} />
           </button>
         </div>
 
-        <Card className={`mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0 ${focusMode ? 'flex-1 flex flex-col justify-center px-5 py-6' : 'p-5'}`}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+        {/* Two-column on desktop, single-column on mobile */}
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row md:gap-6">
+          {/* Left column: exercise card */}
+          <div className={`flex flex-col ${focusMode ? 'flex-1' : 'md:w-[55%] md:shrink-0'}`}>
+            <Card className={`border border-slate-700 bg-slate-800 relative overflow-hidden ${focusMode ? 'flex-1 flex flex-col justify-center px-5 py-6' : 'p-5 mb-4 md:mb-0'}`}>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-          {/* Exercise name — always shown */}
-          <div className={`flex items-center justify-between gap-3 ${focusMode ? 'mb-4' : 'mb-5'}`}>
-            <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
-              {getExName(selectedExercise)}
-            </h2>
-            {!focusMode && (
-              <div className="flex gap-1.5 shrink-0">
-                <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
-                  className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('watch_tutorial')}>
-                  <Youtube size={20} fill="currentColor" />
-                </button>
-                <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
-                  className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('view_images')}>
-                  <Image size={20} />
-                </button>
-                <button onClick={() => setAnatomyExercise(selectedExercise)}
-                  className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('view_anatomy')}>
-                  <Camera size={20} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Last set hint — focus mode only */}
-          {focusMode && (() => {
-            const logs = activeWorkout.logs[selectedExercise];
-            const lastSet = logs?.length ? logs[logs.length - 1] : null;
-            return lastSet ? (
-              <p className="text-xs text-slate-500 text-center mb-4">
-                {t('last_set')} {lastSet.weight}{isCardio ? '' : 'kg'} × {lastSet.reps}{isCardio ? 'min' : ''}
-              </p>
-            ) : null;
-          })()}
-
-          <form onSubmit={handleAdd} className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
-                {isCardio ? t('level') : t('weight')} (kg)
-              </label>
-              <input
-                type="number" inputMode="decimal"
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
-                placeholder="0"
-                value={weight} onChange={e => setWeight(e.target.value)}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
-                {isCardio ? t('time') : t('reps')}
-              </label>
-              <input
-                type="number" inputMode="numeric"
-                className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
-                placeholder="0"
-                value={reps} onChange={e => setReps(e.target.value)}
-              />
-            </div>
-            <button
-              type="submit"
-              className={`flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50 ${
-                focusMode ? 'h-24 w-24' : 'h-16 w-16'
-              }`}
-            >
-              <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
-            </button>
-          </form>
-        </Card>
-
-        {!focusMode && (
-          <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-            <div className="flex items-center justify-between px-2 mb-2">
-               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
-               <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
-            </div>
-            {((activeWorkout.logs[selectedExercise] || []).slice().reverse()).map((set, i, arr) => {
-              const realIndex = arr.length - 1 - i;
-              return (
-                <div key={realIndex} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
-                  <div className="flex items-center gap-4">
-                    <span className="text-slate-500 font-mono text-sm">#{realIndex + 1}</span>
-                    <div className="flex items-baseline gap-1">
-                       <span className="text-xl font-black text-white">{set.weight}</span>
-                       <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
-                       <span className="text-xl font-black text-white">{set.reps}</span>
-                       <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
-                    </div>
-                  </div>
-                  <button onClick={() => deleteSet(selectedExercise, realIndex)} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
+              {/* Exercise name + Zap + action buttons — always shown */}
+              <div className={`flex items-center justify-between gap-3 ${focusMode ? 'mb-4' : 'mb-5'}`}>
+                <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
+                  {getExName(selectedExercise)}
+                </h2>
+                <div className="flex gap-1.5 shrink-0">
+                  {/* Zap — always visible, aligned with exercise section */}
+                  <button
+                    onClick={() => setFocusMode(prev => !prev)}
+                    className={`p-2 rounded-full transition-all active:scale-95 flex items-center justify-center ${
+                      focusMode
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white'
+                    }`}
+                    title={t('focus_mode')}
+                  >
+                    <Zap size={20} />
+                  </button>
+                  {!focusMode && (
+                    <>
+                      <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
+                        className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
+                        title={t('watch_tutorial')}>
+                        <Youtube size={20} fill="currentColor" />
+                      </button>
+                      <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
+                        className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
+                        title={t('view_images')}>
+                        <Image size={20} />
+                      </button>
+                      <button onClick={() => setAnatomyExercise(selectedExercise)}
+                        className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
+                        title={t('view_anatomy')}>
+                        <Camera size={20} />
+                      </button>
+                    </>
+                  )}
                 </div>
-              )
-            })}
-          </div>
-        )}
+              </div>
 
-        {!focusMode && (
-          <div className="pt-3 pb-2 shrink-0">
-            <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
-              {t('finish_workout')}
-            </Button>
+              {/* Last set hint — focus mode only */}
+              {focusMode && (() => {
+                const logs = activeWorkout.logs[selectedExercise];
+                const lastSet = logs?.length ? logs[logs.length - 1] : null;
+                return lastSet ? (
+                  <p className="text-xs text-slate-500 text-center mb-4">
+                    {t('last_set')} {lastSet.weight}{isCardio ? '' : 'kg'} × {lastSet.reps}{isCardio ? 'min' : ''}
+                  </p>
+                ) : null;
+              })()}
+
+              <form onSubmit={handleAdd} className="flex items-end gap-3">
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
+                    {isCardio ? t('level') : t('weight')} (kg)
+                  </label>
+                  <input
+                    type="number" inputMode="decimal"
+                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
+                    placeholder="0"
+                    value={weight} onChange={e => setWeight(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
+                    {isCardio ? t('time') : t('reps')}
+                  </label>
+                  <input
+                    type="number" inputMode="numeric"
+                    className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
+                    placeholder="0"
+                    value={reps} onChange={e => setReps(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className={`flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50 ${
+                    focusMode ? 'h-24 w-24' : 'h-16 w-16'
+                  }`}
+                >
+                  <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
+                </button>
+              </form>
+            </Card>
           </div>
-        )}
+
+          {/* Right column: sets log + finish (hidden in focus mode) */}
+          {!focusMode && (
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex items-center justify-between px-2 mb-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('sets_completed')}</span>
+                <span className="text-xs font-bold text-emerald-500">{(activeWorkout.logs[selectedExercise] || []).length}</span>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {((activeWorkout.logs[selectedExercise] || []).slice().reverse()).map((set, i, arr) => {
+                  const realIndex = arr.length - 1 - i;
+                  return (
+                    <div key={realIndex} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-800 animate-in slide-in-from-top-2">
+                      <div className="flex items-center gap-4">
+                        <span className="text-slate-500 font-mono text-sm">#{realIndex + 1}</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-black text-white">{set.weight}</span>
+                          <span className="text-xs text-slate-500 mr-3">{isCardio ? 'nvl' : 'kg'}</span>
+                          <span className="text-xl font-black text-white">{set.reps}</span>
+                          <span className="text-xs text-slate-500">{isCardio ? 'min' : 'reps'}</span>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteSet(selectedExercise, realIndex)} className="text-slate-600 hover:text-red-400 p-2 rounded-lg hover:bg-slate-800"><Trash2 size={16}/></button>
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="pt-3 pb-2 shrink-0">
+                <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
+                  {t('finish_workout')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {showWorkoutPicker && (
           <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
@@ -1850,7 +1856,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30 pb-safe">
-      <div className="max-w-md mx-auto min-h-screen flex flex-col relative bg-slate-950">
+      <div className="max-w-md md:max-w-2xl mx-auto min-h-screen flex flex-col relative bg-slate-950">
         
         <header className="px-6 pt-8 pb-4 flex justify-between items-center bg-slate-950 sticky top-0 z-10">
           <div>
@@ -1900,7 +1906,7 @@ export default function App() {
 
         {location.pathname !== '/workout' && (
           <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-30 pb-safe">
-            <div className="max-w-md mx-auto flex justify-around items-center h-20 px-2">
+            <div className="max-w-md md:max-w-2xl mx-auto flex justify-around items-center h-20 px-2">
               {[
                 { id: 'dashboard', icon: BarChart3, label: t('dashboard') },
                 { id: 'routines', icon: Dumbbell, label: t('routines') },
