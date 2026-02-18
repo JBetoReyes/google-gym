@@ -1974,23 +1974,23 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
                   <>
                     {exerciseBtns.video && (
                       <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
-                        className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                         title={t('watch_tutorial')}>
-                        <Youtube size={20} fill="currentColor" />
+                        <Youtube size={22} />
                       </button>
                     )}
                     {exerciseBtns.image && (
                       <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
-                        className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
+                        className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                         title={t('view_images')}>
-                        <Image size={20} />
+                        <Image size={22} />
                       </button>
                     )}
                     {exerciseBtns.anatomy && (
                       <button onClick={() => setAnatomyExercise(selectedExercise)}
-                        className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
+                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                         title={t('view_anatomy')}>
-                        <Camera size={20} />
+                        <Camera size={22} />
                       </button>
                     )}
                   </>
@@ -2051,6 +2051,7 @@ const ActiveWorkoutView = React.memo(function ActiveWorkoutView({
               <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 mt-3 animate-in slide-in-from-top-2">
                 <div className="flex items-center gap-2 text-blue-400 font-mono font-bold text-lg">
                   <Clock size={18} />
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">{t('rest_timer')}</span>
                   {Math.floor(restSeconds / 60)}:{String(restSeconds % 60).padStart(2, '0')}
                 </div>
                 <div className="flex-1 mx-3 h-1.5 bg-slate-700 rounded-full overflow-hidden">
