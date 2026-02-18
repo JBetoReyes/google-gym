@@ -118,6 +118,8 @@ const TRANSLATIONS = {
     import_confirm: '¿Agregar esta rutina a tu lista?',
     reorder_exercises: 'Reordenar',
     selected: 'Seleccionados',
+    tab_exercises: 'Ejercicios',
+    no_exercises_selected: 'Sin ejercicios seleccionados',
     camera_error: 'No se pudo acceder a la cámara',
     muscles: {
       Cardio: 'Cardio',
@@ -282,6 +284,8 @@ const TRANSLATIONS = {
     import_confirm: 'Add this routine to your list?',
     reorder_exercises: 'Reorder',
     selected: 'Selected',
+    tab_exercises: 'Exercises',
+    no_exercises_selected: 'No exercises selected',
     camera_error: 'Could not access camera',
     muscles: {
       Cardio: 'Cardio',
@@ -446,6 +450,8 @@ const TRANSLATIONS = {
     import_confirm: 'Ajouter cette routine?',
     reorder_exercises: 'Réordonner',
     selected: 'Sélectionnés',
+    tab_exercises: 'Exercices',
+    no_exercises_selected: 'Aucun exercice sélectionné',
     camera_error: 'Caméra inaccessible',
     muscles: {
       Cardio: 'Cardio',
@@ -1055,6 +1061,7 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
   const [showAddForm, setShowAddForm] = useState(false);
   const [customName, setCustomName] = useState('');
   const [customMuscle, setCustomMuscle] = useState('Pecho');
+  const [formTab, setFormTab] = useState('exercises');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -1070,6 +1077,10 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
     const muscle = t('muscles')[ex.muscle] || ex.muscle;
     return exName.toLowerCase().includes(searchTerm.toLowerCase()) || muscle.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  const filteredSelected = selectedExercises.filter(exId =>
+    getExName(exId).toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAddCustom = () => {
     if (!customName.trim()) return;
@@ -1103,70 +1114,150 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
         </div>
       </div>
 
-      {/* Custom exercise creation */}
-      <div className="mb-3">
-        {!showAddForm ? (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold px-1 py-1 transition-colors"
-          >
-            <Plus size={16} /> {t('create_exercise')}
-          </button>
-        ) : (
-          <div className="bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-bold text-blue-400">{t('new_exercise')}</p>
-            <input
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder={t('exercise_name_placeholder')}
-              value={customName}
-              onChange={e => setCustomName(e.target.value)}
-              autoFocus
-            />
-            <select
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
-              value={customMuscle}
-              onChange={e => setCustomMuscle(e.target.value)}
-            >
-              {['Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
-                <option key={m} value={m}>{t('muscles')[m] || m}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={handleAddCustom}
-                disabled={!customName.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
-              >
-                {t('add')}
-              </button>
-              <button
-                onClick={() => { setShowAddForm(false); setCustomName(''); }}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 rounded-lg text-sm transition-colors"
-              >
-                {t('cancel')}
-              </button>
-            </div>
-          </div>
-        )}
+      {/* Tab toggle */}
+      <div className="flex bg-slate-800 border border-slate-700 rounded-xl p-1 mb-3 shrink-0">
+        <button
+          onClick={() => setFormTab('exercises')}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+            formTab === 'exercises' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          {t('tab_exercises')}
+        </button>
+        <button
+          onClick={() => setFormTab('selected')}
+          className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            formTab === 'selected' ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-slate-300'
+          }`}
+        >
+          {t('selected')}
+          {selectedExercises.length > 0 && (
+            <span className={`text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold ${
+              formTab === 'selected' ? 'bg-blue-500 text-white' : 'bg-slate-600 text-slate-300'
+            }`}>
+              {selectedExercises.length}
+            </span>
+          )}
+        </button>
       </div>
 
-      {selectedExercises.length > 0 && (
-        <div className="mb-3">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
-            {t('selected')} ({selectedExercises.length})
-          </p>
+      {/* Tab content */}
+      {formTab === 'exercises' ? (
+        <>
+          {/* Custom exercise creation */}
+          <div className="mb-3 shrink-0">
+            {!showAddForm ? (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-semibold px-1 py-1 transition-colors"
+              >
+                <Plus size={16} /> {t('create_exercise')}
+              </button>
+            ) : (
+              <div className="bg-slate-800 border border-blue-500/40 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-bold text-blue-400">{t('new_exercise')}</p>
+                <input
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder={t('exercise_name_placeholder')}
+                  value={customName}
+                  onChange={e => setCustomName(e.target.value)}
+                  autoFocus
+                />
+                <select
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-1 focus:ring-blue-500"
+                  value={customMuscle}
+                  onChange={e => setCustomMuscle(e.target.value)}
+                >
+                  {['Cardio', 'Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Abs'].map(m => (
+                    <option key={m} value={m}>{t('muscles')[m] || m}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddCustom}
+                    disabled={!customName.trim()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
+                  >
+                    {t('add')}
+                  </button>
+                  <button
+                    onClick={() => { setShowAddForm(false); setCustomName(''); }}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold py-2 rounded-lg text-sm transition-colors"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Full catalog list */}
+          <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+            {filteredExercises.map(ex => {
+              const isSelected = selectedExercises.includes(ex.id);
+              return (
+                <div
+                  key={ex.id}
+                  onClick={() => toggleSelection(ex.id)}
+                  className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                    isSelected ? 'bg-blue-900/40 border-blue-500' : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                      <MuscleIcon muscle={ex.muscle} className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className={`font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{getExName(ex.id)}</p>
+                      <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">{getMuscleName(ex.muscle)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => openVideoSearch(e, getExName(ex.id))}
+                      className="p-3 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                      title={t('watch_tutorial')}
+                    >
+                      <Youtube size={22} />
+                    </button>
+                    <button
+                      onClick={(e) => openImageSearch(e, getExNameEn(ex.id))}
+                      className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                      title={t('view_images')}
+                    >
+                      <Image size={22} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onOpenAnatomy(ex.id); }}
+                      className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                      title={t('view_anatomy')}
+                    >
+                      <Camera size={22} />
+                    </button>
+                    {isSelected && <div className="bg-blue-500 rounded-full p-1 ml-1"><Check size={14} className="text-white" /></div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        selectedExercises.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center text-slate-600 text-sm font-medium">
+            {t('no_exercises_selected')}
+          </div>
+        ) : (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={({ active, over }) => {
-              if (active.id !== over?.id) {
+              if (active.id !== over?.id)
                 setSelectedExercises(prev => arrayMove(prev, prev.indexOf(active.id), prev.indexOf(over.id)));
-              }
             }}
           >
-            <SortableContext items={selectedExercises} strategy={verticalListSortingStrategy}>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                {selectedExercises.map(exId => (
+            <SortableContext items={filteredSelected} strategy={verticalListSortingStrategy}>
+              <div className="flex-1 overflow-y-auto pr-1 space-y-1.5">
+                {filteredSelected.map(exId => (
                   <SortableExerciseItem
                     key={exId} id={exId}
                     label={getExName(exId)}
@@ -1176,57 +1267,8 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
               </div>
             </SortableContext>
           </DndContext>
-        </div>
+        )
       )}
-
-      <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-        {filteredExercises.map(ex => {
-          const isSelected = selectedExercises.includes(ex.id);
-          return (
-            <div
-              key={ex.id}
-              onClick={() => toggleSelection(ex.id)}
-              className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                isSelected ? 'bg-blue-900/40 border-blue-500' : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-              }`}
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                  <MuscleIcon muscle={ex.muscle} className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className={`font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{getExName(ex.id)}</p>
-                  <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">{getMuscleName(ex.muscle)}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={(e) => openVideoSearch(e, getExName(ex.id))}
-                  className="p-3 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                  title={t('watch_tutorial')}
-                >
-                  <Youtube size={22} />
-                </button>
-                <button
-                  onClick={(e) => openImageSearch(e, getExNameEn(ex.id))}
-                  className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                  title={t('view_images')}
-                >
-                  <Image size={22} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onOpenAnatomy(ex.id); }}
-                  className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                  title={t('view_anatomy')}
-                >
-                  <Camera size={22} />
-                </button>
-                {isSelected && <div className="bg-blue-500 rounded-full p-1 ml-1"><Check size={14} className="text-white" /></div>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
 
       <div className="pt-4 mt-auto border-t border-slate-800">
         <Button className="w-full py-4 text-lg" onClick={() => onSave(name, selectedExercises)} disabled={!name || selectedExercises.length === 0}>
@@ -1238,7 +1280,7 @@ const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVid
 };
 
 export default function App() {
-  const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'es');
+  const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'en');
   const t = (key) => TRANSLATIONS[lang][key] || key;
   
   // Helper para traducir nombre de ejercicio
