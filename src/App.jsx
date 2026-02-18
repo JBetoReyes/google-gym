@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { 
   Dumbbell, 
   Calendar, 
@@ -95,6 +96,7 @@ const TRANSLATIONS = {
     edit_routine: 'Editar Rutina',
     add_exercise: 'Agregar Ejercicio',
     focus_mode: 'Modo Enfoque',
+    last_set: 'Último:',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pecho',
@@ -250,6 +252,7 @@ const TRANSLATIONS = {
     edit_routine: 'Edit Routine',
     add_exercise: 'Add Exercise',
     focus_mode: 'Focus Mode',
+    last_set: 'Last:',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Chest',
@@ -405,6 +408,7 @@ const TRANSLATIONS = {
     edit_routine: 'Modifier la Routine',
     add_exercise: 'Ajouter un Exercice',
     focus_mode: 'Mode Focus',
+    last_set: 'Dernier:',
     muscles: {
       Cardio: 'Cardio',
       Pecho: 'Pectoraux',
@@ -1082,11 +1086,26 @@ export default function App() {
     window.open(`https://www.google.com/search?tbm=isch&q=${query}&tbs=itp:lineart`, '_blank');
   };
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive nav state from URL
+  const activeTab = (() => {
+    const p = location.pathname;
+    if (p.startsWith('/routines')) return 'routines';
+    if (p.startsWith('/workout')) return 'workout';
+    if (p.startsWith('/history')) return 'history';
+    return 'dashboard';
+  })();
+
+  const isCreating = location.pathname === '/routines/new';
+  const editingRoutineId = location.pathname.match(/^\/routines\/(.+)\/edit$/)?.[1];
+
   const [routines, setRoutines] = useState(() => {
     const saved = localStorage.getItem('gym_routines');
     return saved ? JSON.parse(saved) : INITIAL_ROUTINES;
   });
+  const editingRoutine = editingRoutineId ? routines.find(r => r.id === editingRoutineId) ?? null : null;
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('gym_history');
     return saved ? JSON.parse(saved) : [];
@@ -1096,14 +1115,13 @@ export default function App() {
     return saved ? parseInt(saved) : 4;
   });
   
-  const [activeWorkout, setActiveWorkout] = useState(null);
+  const [activeWorkout, setActiveWorkout] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('gym_active_workout') || 'null'); }
+    catch { return null; }
+  });
   const [achievements, setAchievements] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const [anatomyExercise, setAnatomyExercise] = useState(null);
-
-  // Controls whether the creation form is shown (in App so it survives anatomy modal re-renders)
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingRoutine, setEditingRoutine] = useState(null);
 
   const [customExercises, setCustomExercises] = useState(() => {
     try { return JSON.parse(localStorage.getItem('gym_custom_exercises') || '[]'); }
@@ -1131,6 +1149,13 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gym_weekly_goal', weeklyGoal.toString()); }, [weeklyGoal]);
   useEffect(() => { localStorage.setItem('gym_lang', lang); }, [lang]);
   useEffect(() => { localStorage.setItem('gym_custom_exercises', JSON.stringify(customExercises)); }, [customExercises]);
+  useEffect(() => {
+    if (activeWorkout) {
+      localStorage.setItem('gym_active_workout', JSON.stringify(activeWorkout));
+    } else {
+      localStorage.removeItem('gym_active_workout');
+    }
+  }, [activeWorkout]);
 
   // --- Wrapper para Confirmaciones ---
   const triggerConfirm = (title, message, action) => {
@@ -1144,6 +1169,23 @@ export default function App() {
       }
     });
   };
+
+  // Back-button blocker during active workout
+  useEffect(() => {
+    if (!activeWorkout) return;
+    window.history.pushState({ workout: true }, '');
+    const handlePopState = () => {
+      window.history.pushState({ workout: true }, '');
+      triggerConfirm(t('cancel_workout'), t('cancel_msg'), () => {
+        setActiveWorkout(null);
+        setWorkoutSelectedExercise(null);
+        setFocusMode(false);
+        navigate('/routines');
+      });
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeWorkout]);
 
   // --- Import/Export ---
   const handleExport = () => {
@@ -1241,7 +1283,7 @@ export default function App() {
       currentExerciseIndex: 0
     });
     setWorkoutSelectedExercise(routine.exercises[0]);
-    setActiveTab('workout');
+    navigate('/workout');
   };
 
   const handleFinishWorkout = () => {
@@ -1264,7 +1306,7 @@ export default function App() {
     setActiveWorkout(null);
     setWorkoutSelectedExercise(null);
     setFocusMode(false);
-    setActiveTab('dashboard');
+    navigate('/dashboard');
   };
 
   const handleCancelWorkout = () => {
@@ -1272,7 +1314,7 @@ export default function App() {
       setActiveWorkout(null);
       setWorkoutSelectedExercise(null);
       setFocusMode(false);
-      setActiveTab('routines');
+      navigate('/routines');
     });
   };
 
@@ -1487,7 +1529,7 @@ export default function App() {
   const RoutinesView = () => {
     return (
       <div className="space-y-4 animate-in fade-in">
-        <Button onClick={() => setIsCreating(true)} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
+        <Button onClick={() => navigate('/routines/new')} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
           {t('create_routine')}
         </Button>
         {routines.map(routine => (
@@ -1498,7 +1540,7 @@ export default function App() {
                 <p className="text-slate-400 text-sm">{routine.exercises.length} {t('exercises')}</p>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => setEditingRoutine(routine)} className="text-slate-600 hover:text-blue-400 p-2"><Pencil size={18} /></button>
+                <button onClick={() => navigate('/routines/' + routine.id + '/edit')} className="text-slate-600 hover:text-blue-400 p-2"><Pencil size={18} /></button>
                 <button onClick={() => deleteRoutine(routine.id)} className="text-slate-600 hover:text-red-400 p-2"><Trash2 size={18} /></button>
               </div>
             </div>
@@ -1568,78 +1610,97 @@ export default function App() {
           </div>
         )}
 
-        <div className="flex overflow-x-auto pb-3 gap-2 mb-3 scrollbar-hide shrink-0">
-          {routine.exercises.map(ex => {
-            const active = selectedExercise === ex;
-            const count = (activeWorkout.logs[ex] || []).length;
-            // Buscar info para el icono
-            let info = allExercises.find(e => e.id === ex);
-            if (!info) info = allExercises.find(e => e.name === ex);
+        <div className="flex items-center gap-2 mb-3 shrink-0">
+          <div className="flex overflow-x-auto pb-3 gap-2 scrollbar-hide flex-1 min-w-0">
+            {routine.exercises.map(ex => {
+              const active = selectedExercise === ex;
+              const count = (activeWorkout.logs[ex] || []).length;
+              // Buscar info para el icono
+              let info = allExercises.find(e => e.id === ex);
+              if (!info) info = allExercises.find(e => e.name === ex);
 
-            return (
-              <button key={ex} onClick={() => setSelectedExercise(ex)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border
-                  ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}
-                `}
-              >
-                {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
-                {getExName(ex)}
-                {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
-              </button>
-            )
-          })}
+              return (
+                <button key={ex} onClick={() => setSelectedExercise(ex)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border
+                    ${active ? 'bg-slate-100 text-slate-900 border-white shadow-lg shadow-white/10 scale-105' : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'}
+                  `}
+                >
+                  {info && <MuscleIcon muscle={info.muscle} className="w-4 h-4" />}
+                  {getExName(ex)}
+                  {count > 0 && <span className="bg-emerald-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">{count}</span>}
+                </button>
+              )
+            })}
+            <button
+              onClick={() => setShowWorkoutPicker(true)}
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+          {/* Pinned Zap — always visible outside scroll */}
           <button
-            onClick={() => setShowWorkoutPicker(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700 border border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white shrink-0 transition-all"
+            onClick={() => setFocusMode(prev => !prev)}
+            className={`flex-none flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all active:scale-95 shrink-0 ${
+              focusMode
+                ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/50'
+                : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-white'
+            }`}
+            title={t('focus_mode')}
           >
-            <Plus size={18} />
+            <Zap size={18} />
           </button>
         </div>
 
-        <Card className="p-5 mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <Card className={`mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0 ${focusMode ? 'flex-1 flex flex-col justify-center px-5 py-6' : 'p-5'}`}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
 
-          {/* Header con Nombre y Botones de Ayuda */}
-          {!focusMode && (
-            <div className="flex items-center justify-between mb-5 gap-3">
-              <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
-                {getExName(selectedExercise)}
-              </h2>
+          {/* Exercise name — always shown */}
+          <div className={`flex items-center justify-between gap-3 ${focusMode ? 'mb-4' : 'mb-5'}`}>
+            <h2 className="text-xl font-black text-white tracking-tight leading-tight flex-1 min-w-0 truncate">
+              {getExName(selectedExercise)}
+            </h2>
+            {!focusMode && (
               <div className="flex gap-1.5 shrink-0">
-                <button
-                  onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
+                <button onClick={(e) => openVideoSearch(e, getExName(selectedExercise))}
                   className="text-white bg-red-600 hover:bg-red-500 p-2 rounded-full transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('watch_tutorial')}
-                >
+                  title={t('watch_tutorial')}>
                   <Youtube size={20} fill="currentColor" />
                 </button>
-                <button
-                  onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
+                <button onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
                   className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('view_images')}
-                >
+                  title={t('view_images')}>
                   <Image size={20} />
                 </button>
-                <button
-                  onClick={() => setAnatomyExercise(selectedExercise)}
+                <button onClick={() => setAnatomyExercise(selectedExercise)}
                   className="text-white bg-emerald-600 hover:bg-emerald-500 p-2 rounded-full transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center justify-center"
-                  title={t('view_anatomy')}
-                >
+                  title={t('view_anatomy')}>
                   <Camera size={20} />
                 </button>
               </div>
-            </div>
-          )}
-          
+            )}
+          </div>
+
+          {/* Last set hint — focus mode only */}
+          {focusMode && (() => {
+            const logs = activeWorkout.logs[selectedExercise];
+            const lastSet = logs?.length ? logs[logs.length - 1] : null;
+            return lastSet ? (
+              <p className="text-xs text-slate-500 text-center mb-4">
+                {t('last_set')} {lastSet.weight}{isCardio ? '' : 'kg'} × {lastSet.reps}{isCardio ? 'min' : ''}
+              </p>
+            ) : null;
+          })()}
+
           <form onSubmit={handleAdd} className="flex items-end gap-3">
             <div className="flex-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
                 {isCardio ? t('level') : t('weight')} (kg)
               </label>
-              <input 
+              <input
                 type="number" inputMode="decimal"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl h-16 text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700"
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
                 placeholder="0"
                 value={weight} onChange={e => setWeight(e.target.value)}
               />
@@ -1648,11 +1709,11 @@ export default function App() {
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block ml-1">
                 {isCardio ? t('time') : t('reps')}
               </label>
-              <input 
-                 type="number" inputMode="numeric"
-                 className="w-full bg-slate-900 border border-slate-700 rounded-xl h-16 text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700"
-                 placeholder="0"
-                 value={reps} onChange={e => setReps(e.target.value)}
+              <input
+                type="number" inputMode="numeric"
+                className={`w-full bg-slate-900 border border-slate-700 rounded-xl text-center text-2xl font-black text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder:text-slate-700 ${focusMode ? 'h-20' : 'h-16'}`}
+                placeholder="0"
+                value={reps} onChange={e => setReps(e.target.value)}
               />
             </div>
             <button
@@ -1742,17 +1803,6 @@ export default function App() {
           </div>
         )}
 
-        <button
-          onClick={() => setFocusMode(prev => !prev)}
-          className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 rounded-full border-2 shadow-xl transition-all active:scale-95 ${
-            focusMode
-              ? 'bg-blue-600 border-blue-400 text-white shadow-blue-900/50'
-              : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-white'
-          }`}
-          title={t('focus_mode')}
-        >
-          <Zap size={22} />
-        </button>
       </div>
     );
   };
@@ -1813,34 +1863,42 @@ export default function App() {
           </div>
         </header>
 
-        <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${activeTab === 'workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
-          {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'routines' && (isCreating || editingRoutine) && (
-            <RoutineCreationForm
-              t={t}
-              getExName={getExName}
-              getExNameEn={getExNameEn}
-              getMuscleName={getMuscleName}
-              openVideoSearch={openVideoSearch}
-              openImageSearch={openImageSearch}
-              onOpenAnatomy={setAnatomyExercise}
-              initialName={editingRoutine?.name || ''}
-              initialExercises={editingRoutine?.exercises || []}
-              onSave={(name, exercises) => {
-                if (editingRoutine) { updateRoutine(editingRoutine.id, name, exercises); setEditingRoutine(null); }
-                else { addNewRoutine(name, exercises); setIsCreating(false); }
-              }}
-              onCancel={() => { setIsCreating(false); setEditingRoutine(null); }}
-              exercises={allExercises}
-              onAddCustomExercise={addCustomExercise}
-            />
-          )}
-          {activeTab === 'routines' && !isCreating && !editingRoutine && <RoutinesView />}
-          {activeTab === 'workout' && <ActiveWorkoutView />}
-          {activeTab === 'history' && <HistoryView />}
+        <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${location.pathname === '/workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/routines" element={<RoutinesView />} />
+            <Route path="/routines/new" element={
+              <RoutineCreationForm
+                t={t} getExName={getExName} getExNameEn={getExNameEn}
+                getMuscleName={getMuscleName} openVideoSearch={openVideoSearch}
+                openImageSearch={openImageSearch} onOpenAnatomy={setAnatomyExercise}
+                initialName="" initialExercises={[]}
+                onSave={(name, exercises) => { addNewRoutine(name, exercises); navigate('/routines'); }}
+                onCancel={() => navigate('/routines')}
+                exercises={allExercises} onAddCustomExercise={addCustomExercise}
+              />
+            } />
+            <Route path="/routines/:routineId/edit" element={
+              editingRoutine
+                ? <RoutineCreationForm
+                    t={t} getExName={getExName} getExNameEn={getExNameEn}
+                    getMuscleName={getMuscleName} openVideoSearch={openVideoSearch}
+                    openImageSearch={openImageSearch} onOpenAnatomy={setAnatomyExercise}
+                    initialName={editingRoutine.name} initialExercises={editingRoutine.exercises}
+                    onSave={(name, exercises) => { updateRoutine(editingRoutine.id, name, exercises); navigate('/routines'); }}
+                    onCancel={() => navigate('/routines')}
+                    exercises={allExercises} onAddCustomExercise={addCustomExercise}
+                  />
+                : <Navigate to="/routines" replace />
+            } />
+            <Route path="/workout" element={activeWorkout ? <ActiveWorkoutView /> : <Navigate to="/routines" replace />} />
+            <Route path="/history" element={<HistoryView />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </main>
 
-        {activeTab !== 'workout' && (
+        {location.pathname !== '/workout' && (
           <nav className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-30 pb-safe">
             <div className="max-w-md mx-auto flex justify-around items-center h-20 px-2">
               {[
@@ -1850,7 +1908,7 @@ export default function App() {
               ].map(tab => {
                 const active = activeTab === tab.id;
                 return (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  <button key={tab.id} onClick={() => navigate('/' + tab.id)}
                     className={`flex flex-col items-center justify-center w-20 transition-all ${active ? 'text-blue-500 -translate-y-1' : 'text-slate-600 hover:text-slate-400'}`}
                   >
                     <tab.icon size={24} strokeWidth={active ? 2.5 : 2} className="mb-1" />
