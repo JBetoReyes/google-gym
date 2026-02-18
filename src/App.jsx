@@ -1595,17 +1595,6 @@ export default function App() {
           >
             <Plus size={18} />
           </button>
-          <button
-            onClick={() => setFocusMode(prev => !prev)}
-            className={`flex items-center justify-center w-10 h-10 rounded-full border shrink-0 transition-all ${
-              focusMode
-                ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/30'
-                : 'bg-slate-700 border-slate-600 text-slate-400 hover:bg-slate-600 hover:text-white'
-            }`}
-            title={t('focus_mode')}
-          >
-            <Zap size={16} />
-          </button>
         </div>
 
         <Card className="p-5 mb-4 border border-slate-700 bg-slate-800 relative overflow-hidden shrink-0">
@@ -1666,8 +1655,13 @@ export default function App() {
                  value={reps} onChange={e => setReps(e.target.value)}
               />
             </div>
-            <button type="submit" className="h-16 w-16 flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50">
-              <CheckCircle size={28} strokeWidth={2.5} />
+            <button
+              type="submit"
+              className={`flex-none rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-lg shadow-emerald-900/30 active:scale-95 transition-all border border-emerald-400/50 ${
+                focusMode ? 'h-24 w-24' : 'h-16 w-16'
+              }`}
+            >
+              <CheckCircle size={focusMode ? 40 : 28} strokeWidth={2.5} />
             </button>
           </form>
         </Card>
@@ -1698,11 +1692,13 @@ export default function App() {
           </div>
         )}
 
-        <div className="pt-3 pb-2 shrink-0">
-          <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
-            {t('finish_workout')}
-          </Button>
-        </div>
+        {!focusMode && (
+          <div className="pt-3 pb-2 shrink-0">
+            <Button onClick={handleFinishWorkout} className="w-full py-4 text-lg shadow-2xl shadow-blue-900/50" icon={Save}>
+              {t('finish_workout')}
+            </Button>
+          </div>
+        )}
 
         {showWorkoutPicker && (
           <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-in fade-in">
@@ -1745,6 +1741,18 @@ export default function App() {
             </div>
           </div>
         )}
+
+        <button
+          onClick={() => setFocusMode(prev => !prev)}
+          className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 rounded-full border-2 shadow-xl transition-all active:scale-95 ${
+            focusMode
+              ? 'bg-blue-600 border-blue-400 text-white shadow-blue-900/50'
+              : 'bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700 hover:text-white'
+          }`}
+          title={t('focus_mode')}
+        >
+          <Zap size={22} />
+        </button>
       </div>
     );
   };
