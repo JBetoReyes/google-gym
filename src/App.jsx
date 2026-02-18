@@ -794,6 +794,11 @@ export default function App() {
     if (entry) return TRANSLATIONS[lang].ex_names[entry.id] || entry.name;
     return idOrName;
   };
+  const getExNameEn = (idOrName) => {
+    const entry = EXERCISE_CATALOG.find(e => e.id === idOrName || e.name === idOrName);
+    if (entry) return TRANSLATIONS.en.ex_names[entry.id] || entry.name;
+    return idOrName;
+  };
 
   const getMuscleName = (muscleKey) => TRANSLATIONS[lang].muscles[muscleKey] || muscleKey;
   
@@ -1236,7 +1241,7 @@ export default function App() {
                        <Youtube size={22} />
                      </button>
                      <button
-                       onClick={(e) => openImageSearch(e, getExName(ex.id))}
+                       onClick={(e) => openImageSearch(e, getExNameEn(ex.id))}
                        className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
                        title={t('view_images')}
                      >
@@ -1386,7 +1391,7 @@ export default function App() {
                 <Youtube size={20} fill="currentColor" />
               </button>
               <button
-                onClick={(e) => openImageSearch(e, getExName(selectedExercise))}
+                onClick={(e) => openImageSearch(e, getExNameEn(selectedExercise))}
                 className="text-white bg-blue-600 hover:bg-blue-500 p-2 rounded-full transition-all shadow-lg shadow-blue-900/20 active:scale-95 flex items-center justify-center"
                 title={t('view_images')}
               >
