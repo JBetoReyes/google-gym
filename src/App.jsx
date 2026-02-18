@@ -784,6 +784,104 @@ const AnatomyModal = ({ exerciseId, onClose, t, getExName, getMuscleName }) => {
   );
 };
 
+// --- Routine Creation Form (module-level so its reference is stable across App re-renders) ---
+const RoutineCreationForm = ({ t, getExName, getExNameEn, getMuscleName, openVideoSearch, openImageSearch, onOpenAnatomy, onSave, onCancel }) => {
+  const [name, setName] = useState('');
+  const [selectedExercises, setSelectedExercises] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const toggleSelection = (exId) => {
+    setSelectedExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
+  };
+
+  const filteredExercises = EXERCISE_CATALOG.filter(ex => {
+    const exName = t('ex_names')[ex.id] || ex.name;
+    const muscle = t('muscles')[ex.muscle] || ex.muscle;
+    return exName.toLowerCase().includes(searchTerm.toLowerCase()) || muscle.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-140px)] animate-in slide-in-from-right">
+      <div className="mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <button onClick={onCancel} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft /></button>
+          <h3 className="text-xl font-bold text-white">{t('new_routine')}</h3>
+        </div>
+        <input
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none mb-4 font-bold"
+          placeholder={t('name_placeholder')}
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+        <div className="relative">
+          <Search className="absolute left-4 top-3.5 text-slate-500" size={18} />
+          <input
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white outline-none text-sm"
+            placeholder={t('search_placeholder')}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-1 space-y-2">
+        {filteredExercises.map(ex => {
+          const isSelected = selectedExercises.includes(ex.id);
+          return (
+            <div
+              key={ex.id}
+              onClick={() => toggleSelection(ex.id)}
+              className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                isSelected ? 'bg-blue-900/40 border-blue-500' : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              <div className="flex items-center gap-4 flex-1">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                  <MuscleIcon muscle={ex.muscle} className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className={`font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{getExName(ex.id)}</p>
+                  <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">{getMuscleName(ex.muscle)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => openVideoSearch(e, getExName(ex.id))}
+                  className="p-3 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                  title={t('watch_tutorial')}
+                >
+                  <Youtube size={22} />
+                </button>
+                <button
+                  onClick={(e) => openImageSearch(e, getExNameEn(ex.id))}
+                  className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                  title={t('view_images')}
+                >
+                  <Image size={22} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onOpenAnatomy(ex.id); }}
+                  className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
+                  title={t('view_anatomy')}
+                >
+                  <Camera size={22} />
+                </button>
+                {isSelected && <div className="bg-blue-500 rounded-full p-1 ml-1"><Check size={14} className="text-white" /></div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="pt-4 mt-auto border-t border-slate-800">
+        <Button className="w-full py-4 text-lg" onClick={() => onSave(name, selectedExercises)} disabled={!name || selectedExercises.length === 0}>
+          {t('save_routine')} ({selectedExercises.length})
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('gym_lang') || 'es');
   const t = (key) => TRANSLATIONS[lang][key] || key;
@@ -833,11 +931,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [anatomyExercise, setAnatomyExercise] = useState(null);
 
-  // RoutinesView state lifted to avoid remount when App re-renders
+  // Controls whether the creation form is shown (in App so it survives anatomy modal re-renders)
   const [isCreating, setIsCreating] = useState(false);
-  const [newRoutineName, setNewRoutineName] = useState('');
-  const [newRoutineExercises, setNewRoutineExercises] = useState([]);
-  const [newRoutineSearch, setNewRoutineSearch] = useState('');
 
   // ActiveWorkoutView state lifted to avoid remount when App re-renders
   const [workoutSelectedExercise, setWorkoutSelectedExercise] = useState(null);
@@ -1183,107 +1278,6 @@ export default function App() {
   );
 
   const RoutinesView = () => {
-    const toggleSelection = (exId) => {
-      setNewRoutineExercises(prev => prev.includes(exId) ? prev.filter(e => e !== exId) : [...prev, exId]);
-    };
-
-    const filteredExercises = EXERCISE_CATALOG.filter(ex => {
-      const name = t('ex_names')[ex.id] || ex.name;
-      const muscle = t('muscles')[ex.muscle] || ex.muscle;
-      return name.toLowerCase().includes(newRoutineSearch.toLowerCase()) || muscle.toLowerCase().includes(newRoutineSearch.toLowerCase());
-    });
-
-    if (isCreating) {
-      return (
-        <div className="flex flex-col h-[calc(100vh-140px)] animate-in slide-in-from-right">
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-4">
-               <button onClick={() => { setIsCreating(false); setNewRoutineName(''); setNewRoutineExercises([]); setNewRoutineSearch(''); }} className="p-2 hover:bg-slate-800 rounded-full"><ChevronLeft /></button>
-               <h3 className="text-xl font-bold text-white">{t('new_routine')}</h3>
-            </div>
-            <input 
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none mb-4 font-bold"
-              placeholder={t('name_placeholder')}
-              value={newRoutineName}
-              onChange={e => setNewRoutineName(e.target.value)}
-            />
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 text-slate-500" size={18} />
-              <input 
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-4 py-3 text-white outline-none text-sm"
-                placeholder={t('search_placeholder')}
-                value={newRoutineSearch}
-                onChange={e => setNewRoutineSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1 space-y-2">
-             {filteredExercises.map(ex => {
-               const isSelected = newRoutineExercises.includes(ex.id);
-               return (
-                 <div 
-                   key={ex.id}
-                   onClick={() => toggleSelection(ex.id)}
-                   className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                     isSelected ? 'bg-blue-900/40 border-blue-500' : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                   }`}
-                 >
-                   <div className="flex items-center gap-4 flex-1">
-                     <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
-                       <MuscleIcon muscle={ex.muscle} className="w-6 h-6" />
-                     </div>
-                     <div>
-                       <p className={`font-bold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{getExName(ex.id)}</p>
-                       <p className="text-xs text-slate-500 uppercase font-bold tracking-wide">{getMuscleName(ex.muscle)}</p>
-                     </div>
-                   </div>
-                   
-                   <div className="flex items-center gap-1">
-                     <button
-                       onClick={(e) => openVideoSearch(e, getExName(ex.id))}
-                       className="p-3 text-slate-400 hover:text-red-500 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                       title={t('watch_tutorial')}
-                     >
-                       <Youtube size={22} />
-                     </button>
-                     <button
-                       onClick={(e) => openImageSearch(e, getExNameEn(ex.id))}
-                       className="p-3 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                       title={t('view_images')}
-                     >
-                       <Image size={22} />
-                     </button>
-                     <button
-                       onClick={(e) => { e.stopPropagation(); setAnatomyExercise(ex.id); }}
-                       className="p-3 text-slate-400 hover:text-emerald-400 hover:bg-slate-700/50 rounded-full transition-colors active:scale-95"
-                       title={t('view_anatomy')}
-                     >
-                       <Camera size={22} />
-                     </button>
-
-                     {isSelected && <div className="bg-blue-500 rounded-full p-1 ml-1"><Check size={14} className="text-white" /></div>}
-                   </div>
-                 </div>
-               );
-             })}
-          </div>
-          
-          <div className="pt-4 mt-auto border-t border-slate-800">
-            <Button className="w-full py-4 text-lg" onClick={() => {
-              addNewRoutine(newRoutineName, newRoutineExercises);
-              setIsCreating(false);
-              setNewRoutineName('');
-              setNewRoutineExercises([]);
-              setNewRoutineSearch('');
-            }} disabled={!newRoutineName || newRoutineExercises.length === 0}>
-              {t('save_routine')} ({newRoutineExercises.length})
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="space-y-4 animate-in fade-in">
         <Button onClick={() => setIsCreating(true)} className="w-full py-4 border-2 border-dashed border-slate-700 bg-transparent hover:bg-slate-800 text-slate-400" icon={Plus}>
@@ -1538,7 +1532,20 @@ export default function App() {
 
         <main className={`flex-1 px-4 scrollbar-hide min-h-0 ${activeTab === 'workout' ? 'overflow-hidden flex flex-col pb-4' : 'overflow-y-auto pb-24'}`}>
           {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'routines' && <RoutinesView />}
+          {activeTab === 'routines' && isCreating && (
+            <RoutineCreationForm
+              t={t}
+              getExName={getExName}
+              getExNameEn={getExNameEn}
+              getMuscleName={getMuscleName}
+              openVideoSearch={openVideoSearch}
+              openImageSearch={openImageSearch}
+              onOpenAnatomy={setAnatomyExercise}
+              onSave={(name, exercises) => { addNewRoutine(name, exercises); setIsCreating(false); }}
+              onCancel={() => setIsCreating(false)}
+            />
+          )}
+          {activeTab === 'routines' && !isCreating && <RoutinesView />}
           {activeTab === 'workout' && <ActiveWorkoutView />}
           {activeTab === 'history' && <HistoryView />}
         </main>
