@@ -1772,6 +1772,7 @@ export default function App() {
 
   const fileInputRef = useRef(null);
   const activeWorkoutRef = useRef(activeWorkout);
+  const statsScrollRef = useRef(null);
   useEffect(() => { activeWorkoutRef.current = activeWorkout; }, [activeWorkout]);
   
   useEffect(() => { localStorage.setItem('gym_routines', JSON.stringify(routines)); }, [routines]);
@@ -2202,9 +2203,14 @@ export default function App() {
         </div>
       </Card>
 
-      {/* Stat cards — single horizontal scroll row */}
+      {/* Stat cards — single horizontal scroll row with arrow controls */}
       <div className="relative">
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-1 no-scrollbar">
+        <button
+          onClick={() => statsScrollRef.current?.scrollBy({ left: -156, behavior: 'smooth' })}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-full p-1 shadow-lg"
+          style={{ backdropFilter: 'blur(4px)' }}
+        ><ChevronLeft size={14} /></button>
+        <div ref={statsScrollRef} className="flex overflow-x-auto snap-x snap-proximity gap-3 pb-1 no-scrollbar px-6 overscroll-x-contain" style={{ touchAction: 'pan-x' }}>
           <Card className="w-36 shrink-0 snap-start p-4 bg-gradient-to-br from-slate-800 to-slate-900">
             <div className="flex items-center gap-2 mb-2 text-slate-400 overflow-hidden">
               <Activity size={16} className="shrink-0" />
@@ -2248,8 +2254,11 @@ export default function App() {
             <p className="text-lg font-black text-white leading-tight">{stats.favExId ? getExName(stats.favExId) : '—'}</p>
           </Card>
         </div>
-        {/* Right-edge fade scroll hint */}
-        <div className="absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none" />
+        <button
+          onClick={() => statsScrollRef.current?.scrollBy({ left: 156, behavior: 'smooth' })}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-slate-800/90 hover:bg-slate-700 text-slate-300 rounded-full p-1 shadow-lg"
+          style={{ backdropFilter: 'blur(4px)' }}
+        ><ChevronRight size={14} /></button>
       </div>
 
       <Card className="p-5">
@@ -2342,7 +2351,8 @@ export default function App() {
               {/* Mobile: horizontal scroll-snap */}
               <div className="relative md:hidden">
                 <div
-                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar"
+                  className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-2 no-scrollbar overscroll-x-contain"
+                  style={{ touchAction: 'pan-x' }}
                   onScroll={(e) => {
                     const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth);
                     setChartActiveIndex(idx);
