@@ -180,24 +180,31 @@ export default function SettingsModal({ onClose }: Props) {
                   name: r.name,
                   exercises: (r.exercises as string[]) ?? [],
                   position: 0,
-                }).catch(() => null)
+                })
               )
             );
           }
 
           if (Array.isArray(parsed.history)) {
             (parsed.history as Record<string, unknown>[]).forEach((s) =>
-              jobs.push(api.post('/sessions', normalizeSession(s)).catch(() => null))
+              jobs.push(api.post('/sessions', normalizeSession(s)))
             );
           }
 
           if (Array.isArray(parsed.customExercises)) {
             (parsed.customExercises as Record<string, unknown>[]).forEach((ex) =>
-              jobs.push(api.post('/exercises', ex).catch(() => null))
+              jobs.push(api.post('/exercises', ex))
             );
           }
 
-          await Promise.all(jobs);
+          const results = await Promise.allSettled(jobs);
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          if (failed > 0 && failed === results.length) {
+            // Everything failed — surface as error
+            setImportFeedback('error');
+            setTimeout(() => setImportFeedback(null), 4000);
+            return;
+          }
         } else {
           // Anonymous: save to localStorage
           if (parsed.routines) localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(parsed.routines));
@@ -210,10 +217,11 @@ export default function SettingsModal({ onClose }: Props) {
         }
 
         setImportFeedback('success');
-        setTimeout(() => setImportFeedback(null), 3000);
+        // Reload after a short pause so the imported data appears in all views
+        setTimeout(() => { onClose(); window.location.reload(); }, 1500);
       } catch {
         setImportFeedback('error');
-        setTimeout(() => setImportFeedback(null), 3000);
+        setTimeout(() => setImportFeedback(null), 4000);
       }
     };
     reader.readAsText(file);

@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, ChevronLeft, ChevronRight, Clock, Dumbbell,
-  Settings, Target, TrendingUp, Trophy,
+  Target, TrendingUp, Trophy,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, CartesianGrid, Cell, Legend,
@@ -375,7 +375,7 @@ const ChartSlider = React.memo(function ChartSlider({
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function DashboardView() {
   const { plan } = useAuth();
-  const { openSettings, openUpgrade } = useLayout();
+  const { openUpgrade } = useLayout();
   const { getSessions, getCustomExercises, getPreferences, savePreferences } = useStorage();
 
   const [history, setHistory] = useState<Session[]>([]);
@@ -554,16 +554,6 @@ export default function DashboardView() {
 
   return (
     <div className="animate-in fade-in zoom-in duration-300 space-y-6">
-
-      {/* Settings button — mobile only */}
-      <div className="flex justify-end pt-4 lg:hidden">
-        <button
-          onClick={openSettings}
-          className="p-2 bg-[var(--bg-card)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors border border-[var(--border)]"
-        >
-          <Settings size={20} />
-        </button>
-      </div>
 
       {/* ── Row 1: Goal card + stat cards ────────────────────────────── */}
       <div className="lg:grid lg:grid-cols-[380px_1fr] lg:gap-6 lg:items-stretch space-y-6 lg:space-y-0">

@@ -218,6 +218,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     </button>
                   );
                 })}
+                {/* Settings tab */}
+                <button
+                  onClick={openSettings}
+                  className={`flex flex-col items-center justify-center w-20 transition-all ${
+                    showSettings
+                      ? 'text-[var(--accent)] -translate-y-1'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                  }`}
+                >
+                  <Settings size={24} strokeWidth={showSettings ? 2.5 : 2} className="mb-1" />
+                  <span className="text-[10px] font-bold">{t('settings')}</span>
+                </button>
               </div>
             </nav>
           )}
