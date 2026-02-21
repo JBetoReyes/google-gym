@@ -124,16 +124,41 @@ export default function SettingsModal({ onClose }: Props) {
   };
 
   // ── Export / Import ────────────────────────────────────────────────────────
-  const handleExport = () => {
-    const routines = lsGet(STORAGE_KEYS.ROUTINES, []);
-    const history = lsGet(STORAGE_KEYS.HISTORY, []);
-    const weeklyGoal = lsGet(STORAGE_KEYS.WEEKLY_GOAL, 4);
-    const dataStr = JSON.stringify({ routines, history, weeklyGoal, customExercises });
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const link = document.createElement('a');
-    link.setAttribute('href', dataUri);
-    link.setAttribute('download', 'gymtracker_backup.json');
-    link.click();
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      let routines, history, weeklyGoal;
+      if (user) {
+        // Authenticated: fetch live data from API (already mapped to frontend types)
+        [routines, history] = await Promise.all([getRoutines(), getSessions()]);
+        const prefs = await getPreferences();
+        weeklyGoal = prefs.weeklyGoal;
+      } else {
+        routines = lsGet(STORAGE_KEYS.ROUTINES, []);
+        history = lsGet(STORAGE_KEYS.HISTORY, []);
+        weeklyGoal = lsGet(STORAGE_KEYS.WEEKLY_GOAL, 4);
+      }
+      const dataStr = JSON.stringify({ routines, history, weeklyGoal, customExercises });
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const link = document.createElement('a');
+      link.setAttribute('href', dataUri);
+      link.setAttribute('download', 'gymtracker_backup.json');
+      link.click();
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Normalize a session from any format (v1 or API) to API POST body
+  const normalizeSession = (s: Record<string, unknown>) => {
+    const ts = (s.date ?? s.started_at ?? new Date().toISOString()) as string;
+    return {
+      routine_name: ((s.routineName ?? s.routine_name ?? 'Imported') as string),
+      started_at: ts,
+      finished_at: (s.finished_at ?? ts) as string,
+      duration_minutes: Number(s.duration ?? s.duration_minutes ?? 0),
+      logs: (s.logs ?? {}) as Record<string, unknown>,
+    };
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,33 +167,32 @@ export default function SettingsModal({ onClose }: Props) {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const parsed = JSON.parse(e.target?.result as string);
+        const parsed = JSON.parse(e.target?.result as string) as Record<string, unknown>;
 
         if (user) {
-          // Authenticated: transform v1 → v2 schema and push to the API
+          // Authenticated: push each item to the API
           const jobs: Promise<unknown>[] = [];
 
           if (Array.isArray(parsed.routines)) {
-            parsed.routines.forEach((r: { name: string; exercises: string[] }) =>
-              jobs.push(api.post('/routines', { name: r.name, exercises: r.exercises ?? [], position: 0 }).catch(() => null))
+            (parsed.routines as Record<string, unknown>[]).forEach((r) =>
+              jobs.push(
+                api.post('/routines', {
+                  name: r.name,
+                  exercises: (r.exercises as string[]) ?? [],
+                  position: 0,
+                }).catch(() => null)
+              )
             );
           }
 
           if (Array.isArray(parsed.history)) {
-            parsed.history.forEach((s: { routineName: string; date: string; duration: number; logs: unknown }) => {
-              const ts = s.date ?? new Date().toISOString();
-              jobs.push(api.post('/sessions', {
-                routine_name: s.routineName ?? 'Imported',
-                started_at: ts,
-                finished_at: ts,
-                duration_minutes: s.duration ?? 0,
-                logs: s.logs ?? {},
-              }).catch(() => null));
-            });
+            (parsed.history as Record<string, unknown>[]).forEach((s) =>
+              jobs.push(api.post('/sessions', normalizeSession(s)).catch(() => null))
+            );
           }
 
           if (Array.isArray(parsed.customExercises)) {
-            parsed.customExercises.forEach((ex: { id: string; name: string; muscle: string }) =>
+            (parsed.customExercises as Record<string, unknown>[]).forEach((ex) =>
               jobs.push(api.post('/exercises', ex).catch(() => null))
             );
           }
@@ -455,8 +479,8 @@ export default function SettingsModal({ onClose }: Props) {
               {t('data_management')}
             </label>
             <div className="space-y-3">
-              <Button onClick={handleExport} variant="secondary" className="w-full justify-start" icon={Download}>
-                {t('export_data')}
+              <Button onClick={() => { void handleExport(); }} variant="secondary" className="w-full justify-start" icon={Download} disabled={exportLoading}>
+                {exportLoading ? '…' : t('export_data')}
               </Button>
 
               <div className="relative">
