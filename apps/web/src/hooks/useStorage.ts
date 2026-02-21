@@ -63,12 +63,48 @@ export function useStorage() {
 
   // ── Sessions ──────────────────────────────────────────────────────────────
   const getSessions = useCallback(async (): Promise<Session[]> => {
-    if (isAuth) return api.get<Session[]>('/sessions');
+    if (isAuth) {
+      const raw = await api.get<Array<{
+        id: string;
+        routine_name: string;
+        started_at: string;
+        duration_minutes: number;
+        logs: Session['logs'];
+      }>>('/sessions');
+      return raw.map((s) => ({
+        id: s.id,
+        date: s.started_at,
+        routineName: s.routine_name,
+        duration: s.duration_minutes,
+        logs: s.logs,
+      }));
+    }
     return lsGet<Session[]>(STORAGE_KEYS.HISTORY, []);
   }, [isAuth]);
 
   const saveSession = useCallback(async (s: Session): Promise<Session> => {
-    if (isAuth) return api.post<Session>('/sessions', s);
+    if (isAuth) {
+      const created = await api.post<{
+        id: string;
+        routine_name: string;
+        started_at: string;
+        duration_minutes: number;
+        logs: Session['logs'];
+      }>('/sessions', {
+        routine_name: s.routineName,
+        started_at: s.date,
+        finished_at: s.date,
+        duration_minutes: s.duration,
+        logs: s.logs,
+      });
+      return {
+        id: created.id,
+        date: created.started_at,
+        routineName: created.routine_name,
+        duration: created.duration_minutes,
+        logs: created.logs,
+      };
+    }
     const sessions = lsGet<Session[]>(STORAGE_KEYS.HISTORY, []);
     sessions.unshift(s);
     lsSet(STORAGE_KEYS.HISTORY, sessions);
