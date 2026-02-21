@@ -11,4 +11,4 @@ class AppConfig(Base):
     key: Mapped[str] = mapped_column(String(100), primary_key=True)
     value: Mapped[dict] = mapped_column(JSONB, nullable=False)
     updated_by: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
-    updated_at: Mapped[str] = mapped_column(server_default=text("now()"))
+    updated_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))

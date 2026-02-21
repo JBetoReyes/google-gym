@@ -83,7 +83,16 @@ export function useStorage() {
 
   // ── Custom exercises ───────────────────────────────────────────────────────
   const getCustomExercises = useCallback(async (): Promise<Exercise[]> => {
-    if (isAuth) return api.get<Exercise[]>('/exercises');
+    if (isAuth) {
+      try {
+        const exercises = await api.get<Exercise[]>('/exercises');
+        // Keep a local cache so the app works when offline
+        lsSet(STORAGE_KEYS.CUSTOM_EXERCISES, exercises);
+        return exercises;
+      } catch {
+        return lsGet<Exercise[]>(STORAGE_KEYS.CUSTOM_EXERCISES, []);
+      }
+    }
     return lsGet<Exercise[]>(STORAGE_KEYS.CUSTOM_EXERCISES, []);
   }, [isAuth]);
 
@@ -105,23 +114,39 @@ export function useStorage() {
 
   // ── Preferences ───────────────────────────────────────────────────────────
   const getPreferences = useCallback(async (): Promise<UserPreferences> => {
-    if (isAuth) return api.get<UserPreferences>('/preferences');
-    const stored = lsGet<Partial<UserPreferences>>(STORAGE_KEYS.WEEKLY_GOAL, {});
+    if (isAuth) {
+      const raw = await api.get<{
+        weekly_goal: number;
+        lang: UserPreferences['lang'];
+        rest_timer_default: number;
+        exercise_buttons: UserPreferences['exerciseButtons'];
+        theme: UserPreferences['theme'];
+      }>('/preferences');
+      return {
+        weeklyGoal: raw.weekly_goal,
+        lang: raw.lang,
+        restTimerDefault: raw.rest_timer_default as UserPreferences['restTimerDefault'],
+        exerciseButtons: raw.exercise_buttons ?? DEFAULT_PREFERENCES.exerciseButtons,
+        theme: raw.theme,
+      };
+    }
     return {
       ...DEFAULT_PREFERENCES,
-      weeklyGoal: (localStorage.getItem(STORAGE_KEYS.WEEKLY_GOAL)
-        ? parseInt(localStorage.getItem(STORAGE_KEYS.WEEKLY_GOAL)!, 10)
-        : DEFAULT_PREFERENCES.weeklyGoal),
-      lang: (localStorage.getItem(STORAGE_KEYS.LANG) as UserPreferences['lang']) ?? DEFAULT_PREFERENCES.lang,
-      restTimerDefault: (localStorage.getItem(STORAGE_KEYS.REST_TIMER)
-        ? parseInt(localStorage.getItem(STORAGE_KEYS.REST_TIMER)!, 10) as UserPreferences['restTimerDefault']
-        : DEFAULT_PREFERENCES.restTimerDefault),
+      weeklyGoal: lsGet<number>(STORAGE_KEYS.WEEKLY_GOAL, DEFAULT_PREFERENCES.weeklyGoal),
+      lang: lsGet<UserPreferences['lang']>(STORAGE_KEYS.LANG, DEFAULT_PREFERENCES.lang),
+      restTimerDefault: lsGet<UserPreferences['restTimerDefault']>(STORAGE_KEYS.REST_TIMER, DEFAULT_PREFERENCES.restTimerDefault),
       exerciseButtons: lsGet(STORAGE_KEYS.EXERCISE_BUTTONS, DEFAULT_PREFERENCES.exerciseButtons),
     };
   }, [isAuth]);
 
   const savePreferences = useCallback(async (p: Partial<UserPreferences>): Promise<void> => {
-    if (isAuth) return api.put('/preferences', p);
+    if (isAuth) return api.put('/preferences', {
+      ...(p.weeklyGoal    !== undefined && { weekly_goal:        p.weeklyGoal }),
+      ...(p.lang          !== undefined && { lang:               p.lang }),
+      ...(p.restTimerDefault !== undefined && { rest_timer_default: p.restTimerDefault }),
+      ...(p.exerciseButtons !== undefined && { exercise_buttons:   p.exerciseButtons }),
+      ...(p.theme         !== undefined && { theme:              p.theme }),
+    });
     if (p.weeklyGoal !== undefined) lsSet(STORAGE_KEYS.WEEKLY_GOAL, p.weeklyGoal);
     if (p.lang !== undefined) lsSet(STORAGE_KEYS.LANG, p.lang);
     if (p.restTimerDefault !== undefined) lsSet(STORAGE_KEYS.REST_TIMER, p.restTimerDefault);

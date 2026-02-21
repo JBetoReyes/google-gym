@@ -9,7 +9,7 @@ router = APIRouter(prefix="/exercises", tags=["exercises"])
 
 
 @router.get("", response_model=list[ExerciseRead])
-async def list_exercises(profile=CurrentProfile, db: DbSession = None) -> list[ExerciseRead]:
+async def list_exercises(profile: CurrentProfile, db: DbSession) -> list[ExerciseRead]:
     result = await db.execute(
         select(CustomExercise).where(CustomExercise.user_id == profile.id)
     )
@@ -18,7 +18,7 @@ async def list_exercises(profile=CurrentProfile, db: DbSession = None) -> list[E
 
 @router.post("", response_model=ExerciseRead, status_code=201)
 async def create_exercise(
-    body: ExerciseCreate, profile=CurrentProfile, db: DbSession = None
+    body: ExerciseCreate, profile: CurrentProfile, db: DbSession
 ) -> ExerciseRead:
     ex = CustomExercise(id=body.id, user_id=profile.id, name=body.name, muscle=body.muscle)
     db.add(ex)
@@ -29,7 +29,7 @@ async def create_exercise(
 
 @router.put("/{exercise_id}", response_model=ExerciseRead)
 async def update_exercise(
-    exercise_id: str, body: ExerciseUpdate, profile=CurrentProfile, db: DbSession = None
+    exercise_id: str, body: ExerciseUpdate, profile: CurrentProfile, db: DbSession
 ) -> ExerciseRead:
     result = await db.execute(
         select(CustomExercise).where(
@@ -50,7 +50,7 @@ async def update_exercise(
 
 @router.delete("/{exercise_id}", status_code=204)
 async def delete_exercise(
-    exercise_id: str, profile=CurrentProfile, db: DbSession = None
+    exercise_id: str, profile: CurrentProfile, db: DbSession
 ) -> None:
     result = await db.execute(
         delete(CustomExercise).where(

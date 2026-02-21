@@ -17,7 +17,7 @@ def _get_service(db: DbSession) -> RoutineService:
 
 @router.get("", response_model=list[RoutineRead])
 async def list_routines(
-    profile=CurrentProfile,
+    profile: CurrentProfile,
     service: RoutineService = Depends(_get_service),
 ) -> list[RoutineRead]:
     return await service.list_routines(profile.id)  # type: ignore[return-value]
@@ -26,7 +26,7 @@ async def list_routines(
 @router.post("", response_model=RoutineRead, status_code=201)
 async def create_routine(
     body: RoutineCreate,
-    profile=CurrentProfile,
+    profile: CurrentProfile,
     service: RoutineService = Depends(_get_service),
 ) -> RoutineRead:
     routine = await service.create_routine(profile.id, body, profile.plan == "premium")
@@ -37,7 +37,7 @@ async def create_routine(
 async def update_routine(
     routine_id: str,
     body: RoutineUpdate,
-    profile=CurrentProfile,
+    profile: CurrentProfile,
     service: RoutineService = Depends(_get_service),
 ) -> RoutineRead:
     return await service.update_routine(routine_id, profile.id, body)  # type: ignore[return-value]
@@ -46,7 +46,7 @@ async def update_routine(
 @router.delete("/{routine_id}", status_code=204)
 async def delete_routine(
     routine_id: str,
-    profile=CurrentProfile,
+    profile: CurrentProfile,
     service: RoutineService = Depends(_get_service),
 ) -> None:
     await service.delete_routine(routine_id, profile.id)

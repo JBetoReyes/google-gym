@@ -5,7 +5,8 @@ export type MuscleGroup =
   | 'Legs'
   | 'Shoulders'
   | 'Arms'
-  | 'Abs';
+  | 'Abs'
+  | 'Flexibility';
 
 export interface Exercise {
   id: string;

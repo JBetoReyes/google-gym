@@ -7,8 +7,12 @@ import React, {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
-import { setTokenGetter } from '@/services/api';
+import { api, setTokenGetter } from '@/services/api';
 import type { UserPlan } from '@shared/types/user';
+
+function fetchPlan(): Promise<UserPlan> {
+  return api.get<{ plan: UserPlan }>('/profile').then(p => p.plan).catch(() => 'free');
+}
 
 interface AuthState {
   user: User | null;
@@ -17,7 +21,9 @@ interface AuthState {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithOAuth: (provider: 'google' | 'facebook') => Promise<void>;
   signOut: () => Promise<void>;
+  refreshPlan: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -37,15 +43,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
-      setUser(data.session?.user ?? null);
+      const u = data.session?.user ?? null;
+      setUser(u);
+      if (u) setPlan(await fetchPlan());
       setIsLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
-      setUser(newSession?.user ?? null);
+      const u = newSession?.user ?? null;
+      setUser(u);
+      if (u) {
+        fetchPlan().then(setPlan);
+      } else {
+        setPlan('free');
+      }
     });
 
     return () => listener.subscription.unsubscribe();
@@ -61,12 +75,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const signInWithOAuth = useCallback(async (provider: 'google' | 'facebook') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw error;
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
 
+  const refreshPlan = useCallback(async () => {
+    setPlan(await fetchPlan());
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, session, plan, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, plan, isLoading, signIn, signUp, signInWithOAuth, signOut, refreshPlan }}>
       {children}
     </AuthContext.Provider>
   );

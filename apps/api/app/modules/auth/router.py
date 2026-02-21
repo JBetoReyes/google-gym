@@ -29,8 +29,8 @@ class MigratePayload(BaseModel):
 @router.post("/migrate")
 async def migrate_anonymous_data(
     body: MigratePayload,
-    profile=CurrentProfile,
-    db: DbSession = None,
+    profile: CurrentProfile,
+    db: DbSession,
 ) -> dict:
     """
     Called after a user registers/logs in for the first time.

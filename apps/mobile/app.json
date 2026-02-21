@@ -24,18 +24,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#020617"
       },
-      "package": "com.gymtracker.app"
+      "package": "com.gymtracker.app",
+      "permissions": ["android.permission.CAMERA"]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "platforms": ["ios", "android"],
     "plugins": [
       "expo-router",
       "expo-notifications",
       [
-        "expo-ads-admob",
+        "expo-camera",
         {
-          "userTrackingPermission": "This identifier will be used to deliver personalized ads to you."
+          "cameraPermission": "Allow GymTracker to access your camera to scan QR codes for importing routines."
         }
       ]
     ],

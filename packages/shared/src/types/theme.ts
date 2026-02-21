@@ -94,17 +94,17 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
     danger:        '#f87171',
   },
   rose: {
-    bgPage:        '#18020e',
-    bgCard:        '#2d0a1e',
-    bgInput:       '#3b1028',
-    border:        'rgba(244,63,94,0.2)', // rose tint
-    textPrimary:   '#fff1f2',
-    textSecondary: '#fda4af', // rose-300
-    textMuted:     '#f43f5e', // rose-500
-    accent:        '#e11d48',
-    accentHover:   '#f43f5e',
+    bgPage:        '#120d11',
+    bgCard:        '#1f1520',
+    bgInput:       '#2a1c2b',
+    border:        'rgba(216,180,254,0.15)', // soft purple-pink tint
+    textPrimary:   '#fdf4ff',
+    textSecondary: '#e9b8f0', // soft lavender-pink
+    textMuted:     '#c084fc', // muted violet
+    accent:        '#d946a8', // deep pink (not neon)
+    accentHover:   '#e879c0',
     success:       '#34d399',
-    danger:        '#fb923c',
+    danger:        '#f87171',
   },
 };
 

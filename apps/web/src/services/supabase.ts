@@ -4,7 +4,12 @@ const supabaseUrl = import.meta.env['VITE_SUPABASE_URL'] as string;
 const supabaseAnonKey = import.meta.env['VITE_SUPABASE_ANON_KEY'] as string;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY env vars');
+  console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — auth is disabled, app runs in local-only mode.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// supabaseUrl/Key may be empty strings here; auth calls will fail gracefully
+// (AuthContext catches errors and leaves user as null / anonymous)
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder',
+);

@@ -9,14 +9,14 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
 @router.get("", response_model=list[SessionRead])
-async def list_sessions(profile=CurrentProfile, db: DbSession = None) -> list[SessionRead]:
+async def list_sessions(profile: CurrentProfile, db: DbSession) -> list[SessionRead]:
     repo = PostgresSessionRepository(db)
     return await repo.list(profile.id)  # type: ignore[return-value]
 
 
 @router.post("", response_model=SessionRead, status_code=201)
 async def create_session(
-    body: SessionCreate, profile=CurrentProfile, db: DbSession = None
+    body: SessionCreate, profile: CurrentProfile, db: DbSession
 ) -> SessionRead:
     repo = PostgresSessionRepository(db)
     session = Session(
@@ -33,7 +33,7 @@ async def create_session(
 
 @router.delete("/{session_id}", status_code=204)
 async def delete_session(
-    session_id: str, profile=CurrentProfile, db: DbSession = None
+    session_id: str, profile: CurrentProfile, db: DbSession
 ) -> None:
     repo = PostgresSessionRepository(db)
     deleted = await repo.delete(session_id, profile.id)

@@ -103,7 +103,7 @@ def upgrade() -> None:
         op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
         op.execute(
             f"CREATE POLICY own_{table} ON {table} "
-            f"FOR ALL USING (auth.uid()::text = user_id)"
+            f"FOR ALL USING (auth.uid() = user_id)"
         )
 
 

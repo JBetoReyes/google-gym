@@ -13,4 +13,4 @@ class Profile(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_admin: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
-    created_at: Mapped[str] = mapped_column(server_default=text("now()"))
+    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))

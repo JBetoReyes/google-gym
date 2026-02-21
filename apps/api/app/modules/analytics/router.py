@@ -22,7 +22,7 @@ async def _fetch_sessions(user_id: str, db) -> list[Session]:
 
 
 @router.get("/basic")
-async def basic_analytics(profile=CurrentProfile, db: DbSession = None) -> dict:
+async def basic_analytics(profile: CurrentProfile, db: DbSession) -> dict:
     sessions = await _fetch_sessions(profile.id, db)
     total_sets = sum(
         sum(len(sets) for sets in s.logs.values()) for s in sessions
@@ -39,7 +39,7 @@ async def basic_analytics(profile=CurrentProfile, db: DbSession = None) -> dict:
 
 
 @router.get("")
-async def full_analytics(profile=PremiumProfile, db: DbSession = None) -> dict:
+async def full_analytics(profile: PremiumProfile, db: DbSession) -> dict:
     sessions = await _fetch_sessions(profile.id, db)
 
     # Volume data: {date, volume}

@@ -1,18 +1,20 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { BarChart3, Dumbbell, History } from 'lucide-react-native';
+import { BarChart3, Dumbbell, History, Settings } from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function TabLayout() {
+  const { theme } = useTheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#0f172a', // slate-900
-          borderTopColor: 'rgba(51,65,85,0.5)',
+          backgroundColor: theme.bgCard,
+          borderTopColor: theme.border,
         },
-        tabBarActiveTintColor: '#3b82f6',   // blue-500
-        tabBarInactiveTintColor: '#64748b', // slate-500
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.textMuted,
       }}
     >
       <Tabs.Screen
@@ -34,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: 'History',
           tabBarIcon: ({ color, size }) => <History color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />,
         }}
       />
     </Tabs>

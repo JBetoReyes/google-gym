@@ -1,8 +1,38 @@
-[build]
-  publish = "dist"
-  ignore = "exit 0"
+# netlify.toml — GymTracker v2 web app (monorepo)
+# Deploy: connect this repo in Netlify, point branch to "v2", done.
+# Required env vars (set in Netlify UI → Site → Environment variables):
+#   VITE_SUPABASE_URL        https://[ref].supabase.co
+#   VITE_SUPABASE_ANON_KEY   eyJ...
+#   VITE_ADSENSE_CLIENT      ca-pub-... (optional)
+#   VITE_ADSENSE_SLOT        ...       (optional)
+#
+# VITE_API_URL is NOT needed — the [[redirects]] below proxy /api/* to Fly.io,
+# so the app's default of "/api" works out of the box.
+# Only set VITE_API_URL if you want to bypass the proxy.
+#
+# Set the API destination in the redirect rule below (replace the placeholder).
 
+[build]
+  # Build from repo root so pnpm can resolve the shared workspace packages.
+  command = "pnpm install --frozen-lockfile && pnpm --filter web build"
+  publish = "apps/web/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  PNPM_VERSION = "9"
+
+# ── API proxy ──────────────────────────────────────────────────────────────────
+# Forwards /api/* → Fly.io API without exposing the API URL to the client
+# and without CORS issues. Replace the placeholder with your Fly.io app URL.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from   = "/api/*"
+  to     = "https://gymtracker-api.fly.dev/:splat"
+  status = 200
+  force  = true
+
+# ── SPA fallback ───────────────────────────────────────────────────────────────
+# Must come AFTER the /api proxy rule.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
   status = 200

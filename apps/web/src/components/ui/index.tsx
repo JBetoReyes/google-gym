@@ -2,6 +2,7 @@
  * Shared UI primitives — themed via CSS custom properties.
  * All color references use var(--...) tokens so premium themes work automatically.
  */
+export { UpgradeModal } from './UpgradeModal';
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { MuscleGroup } from '@shared/types/exercise';
@@ -28,7 +29,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'ghost' | 
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  icon?: React.ComponentType<{ size?: number }>;
+  icon?: React.ElementType;
 }
 
 export function Button({
@@ -104,23 +105,25 @@ export function ConfirmationModal({
 
 // ── MuscleIcon ────────────────────────────────────────────────────────────────
 const MUSCLE_PATHS: Record<MuscleGroup, React.ReactElement> = {
-  Chest:     <path d="M4 7c0-1.1.9-2 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7zm3 6h10v4H7v-4z" />,
-  Back:      <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.8l5 3.1v6.2l-5 3.1-5-3.1V7.9l5-3.1z" />,
-  Legs:      <path d="M7 2v10l-2 10h3l2-10 2 10h3l-2-10V2H7z" />,
-  Shoulders: <path d="M2 8a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v3h-4V8H6v3H2V8z" />,
-  Arms:      <path d="M18 10a4 4 0 0 0-4-4h-4a4 4 0 0 0-4 4v4h3v4h6v-4h3v-4z" />,
-  Abs:       <path d="M7 4h10v3H7V4zm0 5h10v3H7V9zm0 5h10v3H7v-3z" />,
-  Cardio:    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+  Chest:       <path d="M4 7c0-1.1.9-2 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7zm3 6h10v4H7v-4z" />,
+  Back:        <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zm0 2.8l5 3.1v6.2l-5 3.1-5-3.1V7.9l5-3.1z" />,
+  Legs:        <path d="M7 2v10l-2 10h3l2-10 2 10h3l-2-10V2H7z" />,
+  Shoulders:   <path d="M2 8a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v3h-4V8H6v3H2V8z" />,
+  Arms:        <path d="M18 10a4 4 0 0 0-4-4h-4a4 4 0 0 0-4 4v4h3v4h6v-4h3v-4z" />,
+  Abs:         <path d="M7 4h10v3H7V4zm0 5h10v3H7V9zm0 5h10v3H7v-3z" />,
+  Cardio:      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+  Flexibility: <path d="M12 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm-1 8v5l-3 5h2l2-3 2 3h2l-3-5v-5h-2z" />,
 };
 
 const MUSCLE_COLOR_CLASSES: Record<MuscleGroup, string> = {
-  Chest:     'text-blue-400',
-  Back:      'text-emerald-400',
-  Legs:      'text-amber-400',
-  Shoulders: 'text-purple-400',
-  Arms:      'text-red-400',
-  Abs:       'text-cyan-400',
-  Cardio:    'text-orange-400',
+  Chest:       'text-blue-400',
+  Back:        'text-emerald-400',
+  Legs:        'text-amber-400',
+  Shoulders:   'text-purple-400',
+  Arms:        'text-red-400',
+  Abs:         'text-cyan-400',
+  Cardio:      'text-orange-400',
+  Flexibility: 'text-pink-400',
 };
 
 export function MuscleIcon({

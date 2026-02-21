@@ -10,6 +10,7 @@ from app.modules.exercises.router import router as exercises_router
 from app.modules.preferences.router import router as preferences_router
 from app.modules.routines.router import router as routines_router
 from app.modules.sessions.router import router as sessions_router
+from app.modules.profile.router import router as profile_router
 from app.modules.stripe.router import router as stripe_router
 
 
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics_router)
     app.include_router(admin_router)
     app.include_router(config_router)
+    app.include_router(profile_router)
     app.include_router(stripe_router)
 
     @app.get("/health", tags=["health"])

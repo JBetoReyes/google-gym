@@ -10,36 +10,34 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { WorkoutProvider } from '@/context/WorkoutContext';
-import { AdModal } from '@/components/ads/AdModal';
-import { useAds } from '@/hooks/useAds';
+import Layout from '@/components/layout/Layout';
 
 // Lazy-loaded pages for better initial load time
 const Dashboard  = lazy(() => import('@/pages/Dashboard'));
 const Routines   = lazy(() => import('@/pages/Routines'));
 const Workout    = lazy(() => import('@/pages/Workout'));
 const History    = lazy(() => import('@/pages/History'));
-const AdminPanel = lazy(() => import('@/pages/admin/AdminPanel'));
+const AdminPanel      = lazy(() => import('@/pages/admin/AdminPanel'));
+const UpgradeSuccess  = lazy(() => import('@/pages/UpgradeSuccess'));
 
 function AppRoutes() {
-  const { showAd, dismissAd } = useAds();
-
   return (
-    <>
+    <Layout>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/"                  element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard"         element={<Dashboard />} />
-          <Route path="/routines"          element={<Routines />} />
-          <Route path="/routines/new"      element={<Routines formMode="new" />} />
-          <Route path="/routines/:id/edit" element={<Routines formMode="edit" />} />
-          <Route path="/workout"           element={<Workout />} />
-          <Route path="/history"           element={<History />} />
-          <Route path="/admin"             element={<AdminPanel />} />
-          <Route path="*"                  element={<Navigate to="/dashboard" replace />} />
+          <Route path="/"                    element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"           element={<Dashboard />} />
+          <Route path="/routines"            element={<Routines />} />
+          <Route path="/routines/new"        element={<Routines formMode="new" />} />
+          <Route path="/routines/:id/edit"   element={<Routines formMode="edit" />} />
+          <Route path="/workout"             element={<Workout />} />
+          <Route path="/history"             element={<History />} />
+          <Route path="/admin"               element={<AdminPanel />} />
+          <Route path="/upgrade/success"     element={<UpgradeSuccess />} />
+          <Route path="*"                    element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
-      <AdModal isOpen={showAd} onClose={dismissAd} />
-    </>
+    </Layout>
   );
 }
 

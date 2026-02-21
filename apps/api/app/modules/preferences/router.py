@@ -9,7 +9,7 @@ router = APIRouter(prefix="/preferences", tags=["preferences"])
 
 
 @router.get("", response_model=PreferencesRead)
-async def get_preferences(profile=CurrentProfile, db: DbSession = None) -> PreferencesRead:
+async def get_preferences(profile: CurrentProfile, db: DbSession) -> PreferencesRead:
     result = await db.execute(
         select(UserPreference).where(UserPreference.user_id == profile.id)
     )
@@ -24,7 +24,7 @@ async def get_preferences(profile=CurrentProfile, db: DbSession = None) -> Prefe
 
 @router.put("", response_model=PreferencesRead)
 async def update_preferences(
-    body: PreferencesUpdate, profile=CurrentProfile, db: DbSession = None
+    body: PreferencesUpdate, profile: CurrentProfile, db: DbSession
 ) -> PreferencesRead:
     result = await db.execute(
         select(UserPreference).where(UserPreference.user_id == profile.id)

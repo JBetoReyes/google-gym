@@ -20,6 +20,9 @@ export interface TranslationShape {
   weeks_label: string;
   min_label: string;
   this_week: string;
+  this_month: string;
+  range_6m: string;
+  this_year: string;
   // Routines
   new_routine: string;
   create_routine: string;
@@ -152,6 +155,35 @@ const esExNames: Record<string, string> = {
   skull_crusher: 'Rompe Cráneos', tricep_kickback_m: 'Patada de Tríceps',
   cable_curl_high: 'Curl Polea Alta', bayesian_curl: 'Curl Bayesiano',
   leg_raise: 'Elevaciones de Piernas', ab_wheel: 'Rueda Abdominal',
+  // New exercises
+  glute_kickback_maq: 'Máquina Patada Trasera', donkey_kick: 'Patada de Burro',
+  hip_dip: 'Hip Dip', glute_bridge: 'Puente de Glúteos',
+  sumo_squat: 'Sentadilla Sumo', step_up: 'Step Up',
+  cable_hip_abduct: 'Abducción de Cadera Polea', cable_hip_adduct: 'Aducción de Cadera Polea',
+  tricep_kickback_cable: 'Patada Tríceps Polea', incline_kickback: 'Patada Tríceps Inclinado',
+  cable_fly_neutral: 'Cruce Polea Neutral', cable_y_raise: 'Elevación Y en Polea',
+  pallof_press: 'Press Pallof', cable_oblique: 'Crunch Oblicuo Polea',
+  single_arm_cable_row: 'Remo Polea un Brazo',
+  side_plank: 'Plancha Lateral', bicycle_crunch: 'Crunch de Bicicleta',
+  reverse_crunch: 'Crunch Inverso', hanging_leg_raise: 'Elevación de Piernas Colgado',
+  toes_to_bar: 'Pies a la Barra', v_up: 'V-Up',
+  dead_bug: 'Bicho Muerto', hollow_hold: 'Hollow Hold',
+  mountain_climber: 'Escalador de Montaña', dragon_flag: 'Dragon Flag',
+  flutter_kick: 'Patadas Flutter', scissor_kick: 'Tijeras',
+  toe_touch: 'Toque de Pies', seated_leg_raise: 'Elevación de Piernas Sentado',
+  superman: 'Superman', bird_dog: 'Perro de Caza',
+  reverse_superman: 'Superman Inverso', hollow_rock: 'Balanceo Hollow',
+  tuck_hollow: 'Hollow Encogido', windshield_wiper: 'Limpiaparabrisas',
+  l_sit: 'L-Sit', boat_pose: 'Postura del Barco',
+  // Flexibility
+  hip_flexor_stretch: 'Estiramiento Flexor de Cadera', hamstring_stretch: 'Estiramiento Femoral',
+  quad_stretch: 'Estiramiento Cuádriceps', pigeon_pose: 'Postura del Palomo',
+  butterfly_stretch: 'Estiramiento Mariposa', child_pose: 'Postura del Niño',
+  downward_dog: 'Perro Boca Abajo', cat_cow: 'Gato-Vaca',
+  spine_twist: 'Torsión Espinal Sentado', chest_stretch: 'Estiramiento de Pecho',
+  shoulder_stretch: 'Estiramiento de Hombro', foam_roll_back: 'Foam Roll Espalda',
+  foam_roll_legs: 'Foam Roll Piernas', world_greatest: 'El Gran Estiramiento',
+  couch_stretch: 'Estiramiento en Sofá',
 };
 
 const enExNames: Record<string, string> = {
@@ -190,6 +222,35 @@ const enExNames: Record<string, string> = {
   skull_crusher: 'Skull Crusher', tricep_kickback_m: 'Tricep Kickback',
   cable_curl_high: 'High Cable Curl', bayesian_curl: 'Bayesian Curl',
   leg_raise: 'Leg Raises', ab_wheel: 'Ab Wheel',
+  // New exercises
+  glute_kickback_maq: 'Glute Kickback Machine', donkey_kick: 'Donkey Kick',
+  hip_dip: 'Hip Dip', glute_bridge: 'Glute Bridge',
+  sumo_squat: 'Sumo Squat', step_up: 'Step Up',
+  cable_hip_abduct: 'Cable Hip Abduction', cable_hip_adduct: 'Cable Hip Adduction',
+  tricep_kickback_cable: 'Cable Tricep Kickback', incline_kickback: 'Incline Tricep Kickback',
+  cable_fly_neutral: 'Neutral Cable Fly', cable_y_raise: 'Cable Y Raise',
+  pallof_press: 'Pallof Press', cable_oblique: 'Cable Oblique Crunch',
+  single_arm_cable_row: 'Single-Arm Cable Row',
+  side_plank: 'Side Plank', bicycle_crunch: 'Bicycle Crunch',
+  reverse_crunch: 'Reverse Crunch', hanging_leg_raise: 'Hanging Leg Raise',
+  toes_to_bar: 'Toes to Bar', v_up: 'V-Up',
+  dead_bug: 'Dead Bug', hollow_hold: 'Hollow Hold',
+  mountain_climber: 'Mountain Climber', dragon_flag: 'Dragon Flag',
+  flutter_kick: 'Flutter Kicks', scissor_kick: 'Scissor Kicks',
+  toe_touch: 'Toe Touch Crunch', seated_leg_raise: 'Seated Leg Raise',
+  superman: 'Superman', bird_dog: 'Bird Dog',
+  reverse_superman: 'Reverse Superman', hollow_rock: 'Hollow Body Rock',
+  tuck_hollow: 'Tuck Hollow Hold', windshield_wiper: 'Windshield Wipers',
+  l_sit: 'L-Sit', boat_pose: 'Boat Pose',
+  // Flexibility
+  hip_flexor_stretch: 'Hip Flexor Stretch', hamstring_stretch: 'Hamstring Stretch',
+  quad_stretch: 'Quad Stretch', pigeon_pose: 'Pigeon Pose',
+  butterfly_stretch: 'Butterfly Stretch', child_pose: "Child's Pose",
+  downward_dog: 'Downward Dog', cat_cow: 'Cat-Cow',
+  spine_twist: 'Seated Spine Twist', chest_stretch: 'Chest Stretch',
+  shoulder_stretch: 'Cross-Body Shoulder Stretch', foam_roll_back: 'Foam Roll Back',
+  foam_roll_legs: 'Foam Roll Legs', world_greatest: 'World Greatest Stretch',
+  couch_stretch: 'Couch Stretch',
 };
 
 const frExNames: Record<string, string> = {
@@ -231,6 +292,35 @@ const frExNames: Record<string, string> = {
   skull_crusher: 'Skull Crusher', tricep_kickback_m: 'Extension Triceps Arrière',
   cable_curl_high: 'Curl Poulie Haute', bayesian_curl: 'Curl Bayésien',
   leg_raise: 'Élévations de Jambes', ab_wheel: 'Roue Abdominale',
+  // New exercises
+  glute_kickback_maq: 'Machine Kickback Fessier', donkey_kick: "Coup de Pied d'Âne",
+  hip_dip: 'Hip Dip', glute_bridge: 'Pont Fessier',
+  sumo_squat: 'Squat Sumo', step_up: 'Step Up',
+  cable_hip_abduct: 'Abduction Hanche Câble', cable_hip_adduct: 'Adduction Hanche Câble',
+  tricep_kickback_cable: 'Extension Triceps Câble', incline_kickback: 'Extension Triceps Incliné',
+  cable_fly_neutral: 'Écarté Câble Neutre', cable_y_raise: 'Élévation Y Câble',
+  pallof_press: 'Press Pallof', cable_oblique: 'Crunch Oblique Câble',
+  single_arm_cable_row: 'Rowing Câble Unilatéral',
+  side_plank: 'Gainage Latéral', bicycle_crunch: 'Crunch Vélo',
+  reverse_crunch: 'Crunch Inversé', hanging_leg_raise: 'Élévation de Jambes Suspendu',
+  toes_to_bar: 'Orteils à la Barre', v_up: 'V-Up',
+  dead_bug: 'Dead Bug', hollow_hold: 'Hollow Hold',
+  mountain_climber: 'Grimpeur', dragon_flag: 'Dragon Flag',
+  flutter_kick: 'Coups de Pied Flutter', scissor_kick: 'Ciseaux',
+  toe_touch: 'Toucher les Orteils', seated_leg_raise: 'Élévation Jambes Assis',
+  superman: 'Superman', bird_dog: 'Oiseau-Chien',
+  reverse_superman: 'Superman Inversé', hollow_rock: 'Balancement Hollow',
+  tuck_hollow: 'Hollow Groupé', windshield_wiper: 'Essuie-Glace',
+  l_sit: 'L-Sit', boat_pose: 'Posture du Bateau',
+  // Flexibility
+  hip_flexor_stretch: 'Étirement Fléchisseur de Hanche', hamstring_stretch: 'Étirement Ischio-Jambiers',
+  quad_stretch: 'Étirement Quadriceps', pigeon_pose: 'Posture du Pigeon',
+  butterfly_stretch: 'Étirement Papillon', child_pose: "Posture de l'Enfant",
+  downward_dog: 'Chien Tête en Bas', cat_cow: 'Chat-Vache',
+  spine_twist: 'Torsion Vertébrale Assis', chest_stretch: 'Étirement Pectoraux',
+  shoulder_stretch: 'Étirement Épaule', foam_roll_back: 'Rouleau Dos',
+  foam_roll_legs: 'Rouleau Jambes', world_greatest: 'Grand Étirement Mondial',
+  couch_stretch: 'Étirement du Canapé',
 };
 
 export const TRANSLATIONS: Record<Lang, TranslationShape> = {
@@ -240,7 +330,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     total_workouts: 'Sesiones Totales', total_sets: 'Series Totales', progress: 'Progreso',
     avg_duration: 'Dur. Promedio', streak: 'Racha', fav_exercise: 'Ejercicio Fav.',
     total_time: 'Tiempo Total', sessions_label: 'sesiones', weeks_label: 'sem',
-    min_label: 'min', this_week: 'esta semana',
+    min_label: 'min', this_week: 'esta semana', this_month: 'este mes', range_6m: '6 meses', this_year: 'este año',
     new_routine: 'Nueva Rutina', create_routine: 'Crear Nueva Rutina',
     edit_routine: 'Editar Rutina', start: 'Empezar', exercises: 'ejercicios',
     save_routine: 'Guardar Rutina', name_placeholder: 'Nombre (ej: Día de Pierna)',
@@ -283,6 +373,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     muscles: {
       Cardio: 'Cardio', Chest: 'Pecho', Back: 'Espalda',
       Legs: 'Pierna', Shoulders: 'Hombro', Arms: 'Brazos', Abs: 'Abs',
+      Flexibility: 'Flexibilidad',
     },
     ex_names: esExNames,
   },
@@ -292,7 +383,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     total_workouts: 'Total Workouts', total_sets: 'Total Sets', progress: 'Progress',
     avg_duration: 'Avg. Duration', streak: 'Streak', fav_exercise: 'Top Exercise',
     total_time: 'Total Time', sessions_label: 'sessions', weeks_label: 'wks',
-    min_label: 'min', this_week: 'this week',
+    min_label: 'min', this_week: 'this week', this_month: 'this month', range_6m: '6 months', this_year: 'this year',
     new_routine: 'New Routine', create_routine: 'Create New Routine',
     edit_routine: 'Edit Routine', start: 'Start', exercises: 'exercises',
     save_routine: 'Save Routine', name_placeholder: 'Name (e.g., Leg Day)',
@@ -335,6 +426,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     muscles: {
       Cardio: 'Cardio', Chest: 'Chest', Back: 'Back',
       Legs: 'Legs', Shoulders: 'Shoulders', Arms: 'Arms', Abs: 'Abs',
+      Flexibility: 'Flexibility',
     },
     ex_names: enExNames,
   },
@@ -344,7 +436,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     total_workouts: 'Total Séances', total_sets: 'Total Séries', progress: 'Progrès',
     avg_duration: 'Durée Moy.', streak: 'Série', fav_exercise: 'Exercice Fav.',
     total_time: 'Temps Total', sessions_label: 'séances', weeks_label: 'sem',
-    min_label: 'min', this_week: 'cette semaine',
+    min_label: 'min', this_week: 'cette semaine', this_month: 'ce mois-ci', range_6m: '6 mois', this_year: 'cette année',
     new_routine: 'Nouvelle Routine', create_routine: 'Créer une Routine',
     edit_routine: 'Modifier la Routine', start: 'Commencer', exercises: 'exercices',
     save_routine: 'Sauvegarder', name_placeholder: 'Nom (ex: Jour Jambes)',
@@ -388,6 +480,7 @@ export const TRANSLATIONS: Record<Lang, TranslationShape> = {
     muscles: {
       Cardio: 'Cardio', Chest: 'Pectoraux', Back: 'Dos',
       Legs: 'Jambes', Shoulders: 'Épaules', Arms: 'Bras', Abs: 'Abdos',
+      Flexibility: 'Souplesse',
     },
     ex_names: frExNames,
   },

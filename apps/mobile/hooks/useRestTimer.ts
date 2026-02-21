@@ -30,7 +30,7 @@ export function useRestTimer() {
     // Schedule a push notification in case app is backgrounded
     const notifId = await Notifications.scheduleNotificationAsync({
       content: { title: 'Rest done!', body: 'Time to get back to work 💪' },
-      trigger: { seconds: duration },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: duration },
     });
     notifIdRef.current = notifId;
 

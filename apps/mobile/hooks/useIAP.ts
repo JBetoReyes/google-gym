@@ -1,46 +1,24 @@
 /**
- * useIAP — in-app purchase hook via expo-iap.
- * Handles iOS App Store + Google Play subscriptions.
+ * useIAP — in-app purchase hook.
+ *
+ * expo-iap was deprecated in Expo SDK 52 and does not work in Expo Go.
+ * For production IAP, install react-native-iap via EAS Build and replace
+ * the stubs below with real calls.
+ *
+ * Stub keeps the same public interface so no callers need to change.
  */
-import { useCallback, useEffect, useState } from 'react';
-import * as IAP from 'expo-iap';
-import { api } from '@/services/api';
-
-const PREMIUM_SKU = process.env['EXPO_PUBLIC_IAP_PREMIUM_SKU'] ?? 'gymtracker_premium_monthly';
+import { useCallback, useState } from 'react';
 
 export function useIAP() {
-  const [isPremium, setIsPremium] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    IAP.initConnection().catch(() => {});
-    return () => { IAP.endConnection(); };
-  }, []);
+  const [isPremium] = useState(false);
+  const [loading] = useState(false);
 
   const purchase = useCallback(async () => {
-    setLoading(true);
-    try {
-      await IAP.requestSubscription({ sku: PREMIUM_SKU });
-      // Backend webhook handles plan upgrade; poll status
-      const status = await api.get<{ plan: string }>('/preferences');
-      setIsPremium(status.plan === 'premium');
-    } catch {
-      // User cancelled or error
-    } finally {
-      setLoading(false);
-    }
+    // Stub: no-op in Expo Go. Wire up react-native-iap via EAS Build.
   }, []);
 
   const restore = useCallback(async () => {
-    setLoading(true);
-    try {
-      await IAP.getPurchaseHistory();
-      const status = await api.get<{ plan: string }>('/preferences');
-      setIsPremium(status.plan === 'premium');
-    } catch {
-    } finally {
-      setLoading(false);
-    }
+    // Stub: no-op in Expo Go.
   }, []);
 
   return { isPremium, loading, purchase, restore };

@@ -1,20 +1,42 @@
 """
-Stripe webhook handler.
+Stripe webhook handler and checkout session creator.
 Listens for subscription events and updates profile.plan accordingly.
 """
 import stripe
-from fastapi import APIRouter, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 
 from app.config import settings
 from app.database import get_db
+from app.dependencies import CurrentProfile
 from app.models.profile import Profile
 
 router = APIRouter(prefix="/stripe", tags=["stripe"])
 
 stripe.api_key = settings.stripe_secret_key
+
+
+class CheckoutRequest(BaseModel):
+    success_url: str
+    cancel_url: str
+
+
+@router.post("/checkout")
+async def create_checkout_session(
+    body: CheckoutRequest,
+    profile: CurrentProfile,
+) -> dict:
+    session = stripe.checkout.Session.create(
+        mode="subscription",
+        line_items=[{"price": settings.stripe_premium_price_id, "quantity": 1}],
+        client_reference_id=str(profile.id),
+        customer=profile.stripe_customer_id or None,
+        success_url=body.success_url,
+        cancel_url=body.cancel_url,
+    )
+    return {"url": session.url}
 
 
 @router.post("/webhook", status_code=200)
