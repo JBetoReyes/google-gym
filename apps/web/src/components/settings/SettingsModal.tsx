@@ -47,6 +47,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [importFeedback, setImportFeedback] = useState<'success' | 'error' | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
 
   // Custom exercise section state
   const [showCustomExercises, setShowCustomExercises] = useState(false);
@@ -166,16 +167,20 @@ export default function SettingsModal({ onClose }: Props) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = async (e) => {
+      setImportLoading(true);
       try {
         const parsed = JSON.parse(e.target?.result as string) as Record<string, unknown>;
 
         if (user) {
-          // Authenticated: push each item to the API
-          const jobs: Promise<unknown>[] = [];
+          // Run routines, sessions, and exercises as separate batches so one
+          // type failing (e.g. duplicate exercise IDs) doesn't block the others.
+          const routineJobs: Promise<unknown>[] = [];
+          const sessionJobs: Promise<unknown>[] = [];
+          const exerciseJobs: Promise<unknown>[] = [];
 
           if (Array.isArray(parsed.routines)) {
             (parsed.routines as Record<string, unknown>[]).forEach((r) =>
-              jobs.push(
+              routineJobs.push(
                 api.post('/routines', {
                   name: r.name,
                   exercises: (r.exercises as string[]) ?? [],
@@ -187,21 +192,38 @@ export default function SettingsModal({ onClose }: Props) {
 
           if (Array.isArray(parsed.history)) {
             (parsed.history as Record<string, unknown>[]).forEach((s) =>
-              jobs.push(api.post('/sessions', normalizeSession(s)))
+              sessionJobs.push(api.post('/sessions', normalizeSession(s)))
             );
           }
 
           if (Array.isArray(parsed.customExercises)) {
             (parsed.customExercises as Record<string, unknown>[]).forEach((ex) =>
-              jobs.push(api.post('/exercises', ex))
+              exerciseJobs.push(api.post('/exercises', ex))
             );
           }
 
-          const results = await Promise.allSettled(jobs);
-          const failed = results.filter((r) => r.status === 'rejected').length;
-          if (failed > 0 && failed === results.length) {
-            // Everything failed — surface as error
+          const allJobs = [...routineJobs, ...sessionJobs, ...exerciseJobs];
+
+          if (allJobs.length === 0) {
+            // File parsed but contained no importable data
             setImportFeedback('error');
+            setImportLoading(false);
+            setTimeout(() => setImportFeedback(null), 4000);
+            return;
+          }
+
+          const results = await Promise.allSettled(allJobs);
+          const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+
+          // Log failures to console so they can be inspected in DevTools
+          results
+            .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+            .forEach((r) => console.error('[import] item failed:', r.reason));
+
+          if (succeeded === 0) {
+            // Every single call failed — likely an auth or network issue
+            setImportFeedback('error');
+            setImportLoading(false);
             setTimeout(() => setImportFeedback(null), 4000);
             return;
           }
@@ -217,10 +239,12 @@ export default function SettingsModal({ onClose }: Props) {
         }
 
         setImportFeedback('success');
-        // Reload after a short pause so the imported data appears in all views
+        setImportLoading(false);
+        // Reload after a short pause so imported data appears in all views
         setTimeout(() => { onClose(); window.location.reload(); }, 1500);
       } catch {
         setImportFeedback('error');
+        setImportLoading(false);
         setTimeout(() => setImportFeedback(null), 4000);
       }
     };
@@ -504,8 +528,9 @@ export default function SettingsModal({ onClose }: Props) {
                   variant="secondary"
                   className="w-full justify-start"
                   icon={Upload}
+                  disabled={importLoading}
                 >
-                  {t('import_data')}
+                  {importLoading ? '…' : t('import_data')}
                 </Button>
               </div>
 
