@@ -66,6 +66,7 @@ interface ConfirmProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -76,6 +77,7 @@ export function ConfirmationModal({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  loading = false,
   onConfirm,
   onCancel,
 }: ConfirmProps) {
@@ -91,11 +93,11 @@ export function ConfirmationModal({
         </div>
         <p className="text-[var(--text-secondary)] mb-6">{message}</p>
         <div className="flex gap-3">
-          <Button onClick={onCancel} variant="secondary" className="flex-1">
+          <Button onClick={onCancel} variant="secondary" className="flex-1" disabled={loading}>
             {cancelLabel}
           </Button>
-          <Button onClick={onConfirm} variant="danger" className="flex-1">
-            {confirmLabel}
+          <Button onClick={onConfirm} variant="danger" className="flex-1" disabled={loading}>
+            {loading ? '…' : confirmLabel}
           </Button>
         </div>
       </Card>

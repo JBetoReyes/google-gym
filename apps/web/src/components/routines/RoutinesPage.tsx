@@ -619,6 +619,7 @@ export default function RoutinesPage({ formMode }: RoutinesPageProps) {
   const [lang, setLang] = useState<Lang>('en');
   const [exerciseButtons, setExerciseButtons] = useState({ video: true, image: false, anatomy: false });
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showQRExport, setShowQRExport] = useState<Routine | null>(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -704,17 +705,24 @@ export default function RoutinesPage({ formMode }: RoutinesPageProps) {
         return;
       }
       const newRoutine: Routine = { id: Date.now().toString(), name, exercises };
-      await saveRoutine(newRoutine);
-      setRoutines((prev) => [...prev, newRoutine]);
+      const saved = await saveRoutine(newRoutine);
+      setRoutines((prev) => [...prev, saved]);
     }
     recordClick();
     navigate('/routines');
   };
 
   const handleDeleteRoutine = async (id: string) => {
-    await deleteRoutine(id);
-    setRoutines((prev) => prev.filter((r) => r.id !== id));
-    setConfirmDelete(null);
+    setIsDeleting(true);
+    try {
+      await deleteRoutine(id);
+      setRoutines((prev) => prev.filter((r) => r.id !== id));
+      setConfirmDelete(null);
+    } catch {
+      // API failed — keep modal open so user can retry
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleStartWorkout = (routine: Routine) => {
@@ -930,7 +938,8 @@ export default function RoutinesPage({ formMode }: RoutinesPageProps) {
         message={routineToDelete ? `Delete "${routineToDelete.name}"? ${t('delete_msg')}` : t('delete_msg')}
         confirmLabel={t('confirm')}
         cancelLabel={t('cancel')}
-        onConfirm={() => confirmDelete && handleDeleteRoutine(confirmDelete)}
+        loading={isDeleting}
+        onConfirm={() => confirmDelete && void handleDeleteRoutine(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
       />
 
