@@ -29,8 +29,22 @@ jobs:
       - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      # --local-config forces vercel build to use our vercel.json (outputDirectory,
-      # buildCommand, rewrites) instead of whatever is saved in the Vercel dashboard.
+      # vercel pull downloads dashboard settings (outputDirectory, buildCommand) into
+      # .vercel/project.json and those override --local-config for project-level settings.
+      # Clear them so vercel.json controls the build instead of the dashboard.
+      - name: Clear dashboard build overrides
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('.vercel/project.json', 'utf8'));
+            if (p.settings) {
+              delete p.settings.outputDirectory;
+              delete p.settings.buildCommand;
+              delete p.settings.framework;
+            }
+            fs.writeFileSync('.vercel/project.json', JSON.stringify(p, null, 2));
+          "
+
       - name: Build
         run: vercel build --prod --local-config ./vercel.json --token=${{ secrets.VERCEL_TOKEN }}
 
