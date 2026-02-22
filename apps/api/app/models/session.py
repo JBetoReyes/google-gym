@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Integer, String, text
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,7 +19,7 @@ class Session(Base):
     user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), nullable=False, index=True)
     routine_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), nullable=True)
     routine_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    started_at: Mapped[str] = mapped_column(nullable=False)
-    finished_at: Mapped[str] = mapped_column(nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     logs: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
