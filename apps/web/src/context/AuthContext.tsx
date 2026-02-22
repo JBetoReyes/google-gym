@@ -9,6 +9,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { api, setTokenGetter } from '@/services/api';
 import type { UserPlan } from '@shared/types/user';
+import { STORAGE_KEYS } from '@shared/utils/storage';
 
 function fetchPlan(): Promise<UserPlan> {
   return api.get<{ plan: UserPlan }>('/profile').then(p => p.plan).catch(() => 'free');
@@ -43,15 +44,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session);
+    // getSession() reads from localStorage synchronously — fast path so the UI
+    // doesn't flash "logged out" while waiting for the async INITIAL_SESSION event.
+    supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user ?? null;
+      setSession(data.session);
       setUser(u);
-      if (u) setPlan(await fetchPlan());
+      if (u) fetchPlan().then(setPlan);
       setIsLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    // onAuthStateChange handles every subsequent change: sign-in, sign-out,
+    // and TOKEN_REFRESHED (fired when an expired access token is silently renewed).
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Skip INITIAL_SESSION — already handled by getSession() above.
+      if (event === 'INITIAL_SESSION') return;
+
       setSession(newSession);
       const u = newSession?.user ?? null;
       setUser(u);
@@ -84,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    localStorage.removeItem(STORAGE_KEYS.SYNCED);
     await supabase.auth.signOut();
   }, []);
 
