@@ -1,6 +1,7 @@
+from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Integer, String, text
+from sqlalchemy import DateTime, Integer, String, text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,8 +20,9 @@ class Routine(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     exercises: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     position: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
-    created_at: Mapped[str] = mapped_column(server_default=text("CURRENT_TIMESTAMP"))
-    updated_at: Mapped[str] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=text("CURRENT_TIMESTAMP"),
         onupdate=text("CURRENT_TIMESTAMP"),
     )
