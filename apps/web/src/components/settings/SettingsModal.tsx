@@ -45,7 +45,7 @@ export default function SettingsModal({ onClose }: Props) {
     workoutView: { video: true, image: false, anatomy: false },
   });
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
-  const [importFeedback, setImportFeedback] = useState<'success' | 'error' | null>(null);
+  const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; msg?: string } | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
 
@@ -190,11 +190,15 @@ export default function SettingsModal({ onClose }: Props) {
             );
           }
 
-          if (Array.isArray(parsed.history)) {
-            (parsed.history as Record<string, unknown>[]).forEach((s) =>
-              sessionJobs.push(api.post('/sessions', normalizeSession(s)))
-            );
-          }
+          // Accept both "history" (v1 web export) and "sessions" (mobile/v2 export)
+          const rawSessions = Array.isArray(parsed.sessions)
+            ? parsed.sessions
+            : Array.isArray(parsed.history)
+            ? parsed.history
+            : [];
+          (rawSessions as Record<string, unknown>[]).forEach((s) =>
+            sessionJobs.push(api.post('/sessions', normalizeSession(s)))
+          );
 
           if (Array.isArray(parsed.customExercises)) {
             (parsed.customExercises as Record<string, unknown>[]).forEach((ex) =>
@@ -204,29 +208,24 @@ export default function SettingsModal({ onClose }: Props) {
 
           const allJobs = [...routineJobs, ...sessionJobs, ...exerciseJobs];
 
-          if (allJobs.length === 0) {
-            // File parsed but contained no importable data
-            setImportFeedback('error');
-            setImportLoading(false);
-            setTimeout(() => setImportFeedback(null), 4000);
-            return;
+          if (allJobs.length > 0) {
+            const results = await Promise.allSettled(allJobs);
+            const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+            const rejected = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+
+            rejected.forEach((r) => console.error('[import] item failed:', r.reason));
+
+            if (succeeded === 0) {
+              // Every call failed — surface the first error message so the user knows why
+              const firstError = rejected[0]?.reason as { message?: string } | undefined;
+              const msg = firstError?.message;
+              setImportFeedback({ type: 'error', ...(msg ? { msg } : {}) });
+              setImportLoading(false);
+              setTimeout(() => setImportFeedback(null), 6000);
+              return;
+            }
           }
-
-          const results = await Promise.allSettled(allJobs);
-          const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-
-          // Log failures to console so they can be inspected in DevTools
-          results
-            .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
-            .forEach((r) => console.error('[import] item failed:', r.reason));
-
-          if (succeeded === 0) {
-            // Every single call failed — likely an auth or network issue
-            setImportFeedback('error');
-            setImportLoading(false);
-            setTimeout(() => setImportFeedback(null), 4000);
-            return;
-          }
+          // allJobs.length === 0 means the file was valid but empty — treat as success
         } else {
           // Anonymous: save to localStorage
           if (parsed.routines) localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(parsed.routines));
@@ -238,14 +237,14 @@ export default function SettingsModal({ onClose }: Props) {
           }
         }
 
-        setImportFeedback('success');
+        setImportFeedback({ type: 'success' });
         setImportLoading(false);
-        // Reload after a short pause so imported data appears in all views
         setTimeout(() => { onClose(); window.location.reload(); }, 1500);
-      } catch {
-        setImportFeedback('error');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : undefined;
+        setImportFeedback({ type: 'error', ...(msg ? { msg } : {}) });
         setImportLoading(false);
-        setTimeout(() => setImportFeedback(null), 4000);
+        setTimeout(() => setImportFeedback(null), 6000);
       }
     };
     reader.readAsText(file);
@@ -272,14 +271,19 @@ export default function SettingsModal({ onClose }: Props) {
           {/* Import feedback banner */}
           {importFeedback && (
             <div
-              className={`mb-4 flex items-center gap-2 p-3 rounded-xl text-sm font-semibold animate-in slide-in-from-top-2 ${
-                importFeedback === 'success'
+              className={`mb-4 flex items-start gap-2 p-3 rounded-xl text-sm font-semibold animate-in slide-in-from-top-2 ${
+                importFeedback.type === 'success'
                   ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
                   : 'bg-red-500/10 border border-red-500/30 text-red-400'
               }`}
             >
-              {importFeedback === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
-              {t(importFeedback === 'success' ? 'import_success' : 'import_error')}
+              {importFeedback.type === 'success' ? <Check size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
+              <span>
+                {t(importFeedback.type === 'success' ? 'import_success' : 'import_error')}
+                {importFeedback.msg && (
+                  <span className="block text-xs font-normal opacity-80 mt-0.5">{importFeedback.msg}</span>
+                )}
+              </span>
             </div>
           )}
 
