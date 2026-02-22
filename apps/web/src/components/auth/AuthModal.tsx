@@ -21,6 +21,7 @@ type Tab = 'login' | 'register';
 type Step = 'form' | 'verify-email' | 'migrate' | 'done';
 
 function hasLocalData(): boolean {
+  if (localStorage.getItem(STORAGE_KEYS.SYNCED)) return false;
   return !!(
     localStorage.getItem(STORAGE_KEYS.ROUTINES) ||
     localStorage.getItem(STORAGE_KEYS.HISTORY) ||
@@ -105,12 +106,14 @@ export default function AuthModal({ onClose }: Props) {
     } catch {
       // Migration failed silently — user still logged in
     } finally {
+      localStorage.setItem(STORAGE_KEYS.SYNCED, '1');
       setIsMigrating(false);
       setStep('done');
     }
   };
 
   const handleSkipMigration = () => {
+    localStorage.setItem(STORAGE_KEYS.SYNCED, '1');
     setStep('done');
   };
 

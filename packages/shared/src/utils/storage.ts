@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   REST_TIMER:       'gym_rest_timer',
   EXERCISE_BUTTONS: 'gym_exercise_btns',
   AD_CLICK_COUNT:   'gym_ad_clicks',
+  SYNCED:           'gym_synced',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
