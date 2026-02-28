@@ -873,20 +873,54 @@ export default function RoutinesPage({ formMode }: RoutinesPageProps) {
           onClick={() => setShowQRExport(null)}
         >
           <div
-            className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4"
+            className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl w-full max-w-xs overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <QRCodeSVG
-              value={JSON.stringify({ v: 1, routine: { name: showQRExport.name, exercises: showQRExport.exercises } })}
-              size={200}
-            />
-            <p className="font-bold text-slate-900">{showQRExport.name}</p>
-            <button
-              onClick={() => setShowQRExport(null)}
-              className="text-slate-500 text-sm hover:text-slate-800"
-            >
-              Close
-            </button>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3">
+              <div className="flex items-center gap-2">
+                <QrCode size={16} className="text-[var(--text-muted)]" />
+                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  {t('routine_qr_title')}
+                </span>
+              </div>
+              <button
+                onClick={() => setShowQRExport(null)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg hover:bg-[var(--bg-input)] transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* QR code */}
+            <div className="flex justify-center px-5 pb-4">
+              <div className="bg-white p-4 rounded-xl shadow-sm">
+                <QRCodeSVG
+                  value={JSON.stringify({ v: 1, routine: { name: showQRExport.name, exercises: showQRExport.exercises } })}
+                  size={200}
+                />
+              </div>
+            </div>
+
+            {/* Routine info */}
+            <div className="px-5 pb-5 flex flex-col items-center gap-1 text-center">
+              <p className="font-bold text-[var(--text-primary)] text-lg leading-tight">
+                {showQRExport.name}
+              </p>
+              <p className="text-[var(--text-muted)] text-xs">
+                {showQRExport.exercises.length} {t('exercises')}
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-[var(--border)] px-5 py-3">
+              <button
+                onClick={() => setShowQRExport(null)}
+                className="w-full text-center text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors py-1"
+              >
+                {t('cancel')}
+              </button>
+            </div>
           </div>
         </div>
       )}
