@@ -81,7 +81,8 @@ export const EXERCISE_CATALOG: Exercise[] = [
   { id: 'hs_shoulder',   name: 'Hammer Strength Shoulder',  muscle: 'Shoulders' },
   { id: 'lat_raise_maq', name: 'Lateral Raise Machine',     muscle: 'Shoulders' },
   { id: 'cable_front',   name: 'Cable Front Raise',         muscle: 'Shoulders' },
-  { id: 'cable_y_raise', name: 'Cable Y Raise',             muscle: 'Shoulders' },
+  { id: 'cable_y_raise',   name: 'Cable Y Raise',              muscle: 'Shoulders' },
+  { id: 'shoulder_press_maq', name: 'Shoulder Press Machine',  muscle: 'Shoulders' },
   // Arms
   { id: 'curlb',             name: 'Barbell Curl',               muscle: 'Arms' },
   { id: 'curlm',             name: 'Hammer Curl',                muscle: 'Arms' },
